@@ -37,6 +37,11 @@ struct LIGHTS
 	int						m_nLights;
 };
 
+struct TextureTransform
+{
+	float m_xmf3Transform;
+};
+
 class CScene
 {
 public:
@@ -65,6 +70,8 @@ public:
 
 	CPlayer								*m_pPlayer = NULL;
 
+	float								m_fTimeElapsed;
+
 public:
 	ID3D12RootSignature					*m_pd3dGraphicsRootSignature = NULL;
 
@@ -84,4 +91,8 @@ public:
 
 	ID3D12Resource						*m_pd3dcbLights = NULL;
 	LIGHTS								*m_pcbMappedLights = NULL;
+
+	TextureTransform					*m_pTrans = NULL;
+	ID3D12Resource						*m_pd3dcbTexTrans = NULL;
+	TextureTransform					*m_pcbMappedTexTrans = NULL;
 };

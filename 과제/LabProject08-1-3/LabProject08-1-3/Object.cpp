@@ -1107,6 +1107,11 @@ CWaterObject::~CWaterObject()
 {
 }
 
+void CWaterObject::Animate(float fTimeElapsed)
+{
+	
+}
+
 void CWaterObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
 {
 	OnPrepareRender();

@@ -25,6 +25,11 @@ cbuffer cbGameObjectInfo2 : register(b3)
 	matrix		gmtxTexturedObject : packoffset(c0);
 };
 
+cbuffer cbTextureTransform : register(b5)
+{	
+	float gmtxTextureTransform : packoffset(c0);
+};
+
 #include "Light.hlsl"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -298,7 +303,9 @@ VS_TEXTURED_OUTPUT VSWaterTextured(VS_TEXTURED_INPUT input)
 	VS_TEXTURED_OUTPUT output;
 
 	output.position = mul(mul(mul(float4(input.position, 1.0f), gmtxTexturedObject), gmtxView), gmtxProjection);
-	output.uv = input.uv;
+	output.uv.x = input.uv.x + gmtxTextureTransform;
+	output.uv.y = input.uv.y + gmtxTextureTransform;
+	//output.uv = mul(float3(input.uv, 1.0f), gmtxTextureTransform);
 
 	return(output);
 }

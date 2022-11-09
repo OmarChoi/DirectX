@@ -366,6 +366,7 @@ class CWaterObject : public CGameObject
 {
 public:
 	CWaterObject();
+	virtual void Animate(float fTimeElapsed);
 	virtual ~CWaterObject();
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera);
 };
