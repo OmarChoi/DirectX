@@ -14,6 +14,7 @@
 #define DIR_UP						0x10
 #define DIR_DOWN					0x20
 
+class CPlayer;
 class CShader;
 class CStandardShader;
 
@@ -169,6 +170,11 @@ public:
 //
 class CGameObject
 {
+protected:
+	XMFLOAT3						m_xmf3AABBCenter = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	XMFLOAT3						m_xmf3AABBExtents = XMFLOAT3(4.0f, 4.0f, 9.0f);
+	BoundingOrientedBox				m_xmBoundingBox = BoundingOrientedBox(m_xmf3AABBCenter, m_xmf3AABBExtents, XMFLOAT4(GetLook().x, GetLook().y, GetLook().z, 1.f));
+
 private:
 	int								m_nReferences = 0;
 
@@ -253,6 +259,7 @@ public:
 	UINT GetMeshType(UINT nIndex) { return((m_ppMeshes[nIndex]) ? m_ppMeshes[nIndex]->GetType() : 0x00); }
 
 	void SetBillboardLookAt(XMFLOAT3& xmf3Target, XMFLOAT3& xmf3Up = XMFLOAT3(0.0f, 1.0f, 0.0f));
+	void SetLookAt(XMFLOAT3& xmf3Position, XMFLOAT3& xmf3Target, XMFLOAT3& xmf3Up);
 public:
 	void LoadMaterialsFromFile(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, CGameObject *pParent, FILE *pInFile, CShader *pShader);
 
@@ -260,6 +267,11 @@ public:
 	static CGameObject *LoadGeometryFromFile(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, ID3D12RootSignature *pd3dGraphicsRootSignature, char *pstrFileName, CShader *pShader);
 
 	static void PrintFrameInfo(CGameObject *pGameObject, CGameObject *pParent);
+
+	BoundingOrientedBox GetBoundingBox() { return m_xmBoundingBox; }
+
+	bool IsVisible(CCamera* pCamera = NULL);
+	bool IsCrashed(CPlayer* pPlayer = NULL);
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

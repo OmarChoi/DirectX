@@ -73,7 +73,7 @@ void CScene::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *p
 
 	m_pSkyBox = new CSkyBox(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
 
-	XMFLOAT3 xmf3Scale(18.0f, 6.0f, 18.0f);
+	XMFLOAT3 xmf3Scale(36.0f, 6.0f, 36.0f);
 	XMFLOAT4 xmf4Color(0.0f, 0.5f, 0.0f, 0.0f);
 	m_pTerrain = new CHeightMapTerrain(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, _T("Image/HeightMap.raw"), 257, 257, 257, 257, xmf3Scale, xmf4Color);
 
@@ -83,19 +83,25 @@ void CScene::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *p
 
 	//m_ppShaders[0] = pObjectsShader;
 
-	m_nShaders = 2;
+	m_nShaders = 3;
 	m_ppShaders = new CShader * [m_nShaders];
 
-	CBillboardObjectsShader* pBillboardObjectShader = new CBillboardObjectsShader();
-	pBillboardObjectShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
-	pBillboardObjectShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, m_pTerrain);
-	m_ppShaders[0] = pBillboardObjectShader;
 
 	CWaterShader* pWaterObjectShader = new CWaterShader();
 	pWaterObjectShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
 	pWaterObjectShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, m_pTerrain);
-	m_ppShaders[1] = pWaterObjectShader;
-	
+	m_ppShaders[0] = pWaterObjectShader;
+
+	CEnemyShader* pObjectsShader = new CEnemyShader();
+	pObjectsShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+	pObjectsShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, m_pTerrain);
+	m_ppShaders[1] = pObjectsShader;
+
+	CBillboardObjectsShader* pBillboardObjectShader = new CBillboardObjectsShader();
+	pBillboardObjectShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+	pBillboardObjectShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, m_pTerrain);
+	m_ppShaders[2] = pBillboardObjectShader;
+
 	CreateShaderVariables(pd3dDevice, pd3dCommandList);
 }
 
@@ -351,7 +357,7 @@ void CScene::UpdateShaderVariables(ID3D12GraphicsCommandList *pd3dCommandList)
 	::memcpy(&m_pcbMappedLights->m_nLights, &m_nLights, sizeof(int));
 
 
-	m_pTrans->m_xmf3Transform = (float)fmod(m_fTimeElapsed,1);
+	m_pTrans->m_xmf3Transform = (float)fmod(m_fTimeElapsed,100) * 0.01;
 	::memcpy(m_pcbMappedTexTrans, m_pTrans, sizeof(TextureTransform));
 }
 
@@ -456,11 +462,11 @@ void CScene::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera
 	}
 
 	if (m_pSkyBox) m_pSkyBox->Render(pd3dCommandList, pCamera);
-	//if (m_pTerrain) m_pTerrain->Render(pd3dCommandList, pCamera);
+	if (m_pTerrain) m_pTerrain->Render(pd3dCommandList, pCamera);
 
-	//for (int i = 0; i < m_nShaders; i++) 
-	//	if (m_ppShaders[i]) 
-	//		m_ppShaders[i]->Render(pd3dCommandList, pCamera);
+	for (int i = 0; i < m_nShaders; i++) 
+		if (m_ppShaders[i]) 
+			m_ppShaders[i]->Render(pd3dCommandList, pCamera, m_pPlayer);
 
-	m_ppShaders[1]->Render(pd3dCommandList, pCamera);
+	// m_ppShaders[1]->Render(pd3dCommandList, pCamera);
 }

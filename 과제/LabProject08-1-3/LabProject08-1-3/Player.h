@@ -35,6 +35,9 @@ protected:
 
 	CShader						*m_pShader = NULL;
 
+	XMFLOAT3					m_xmf3AABBCenter = XMFLOAT3(0.f, 0.f, 0.f);
+	XMFLOAT3					m_xmf3AABBExtents = XMFLOAT3(4.0f, 4.0f, 9.0f);
+	BoundingOrientedBox			m_xmBoundingBox = BoundingOrientedBox(m_xmf3AABBCenter, m_xmf3AABBExtents, XMFLOAT4(0.f, 0.f, 0.f, 1.f));
 public:
 	CPlayer();
 	virtual ~CPlayer();
@@ -81,6 +84,8 @@ public:
 	virtual CCamera *ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed) { return(NULL); }
 	virtual void OnPrepareRender();
 	virtual void Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera = NULL);
+
+	BoundingOrientedBox GetBoundingBox() { return(m_xmBoundingBox); }
 };
 
 class CAirplanePlayer : public CPlayer

@@ -226,6 +226,8 @@ CTexturedRectMesh::CTexturedRectMesh(ID3D12Device* pd3dDevice, ID3D12GraphicsCom
 		}
 	}
 
+	m_xmBoundingBox = BoundingOrientedBox(XMFLOAT3(fx, fy, fz), XMFLOAT3(fx + fWidth / 2, fy + fHeight / 2, 0.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+
 	if (type == 0)
 	{
 		m_pd3dPositionBuffer = ::CreateBufferResource(pd3dDevice, pd3dCommandList, m_pxmf3Positions, sizeof(XMFLOAT3) * m_nVertices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, &m_pd3dPositionUploadBuffer);
@@ -404,6 +406,7 @@ void CStandardMesh::LoadMeshFromFile(ID3D12Device *pd3dDevice, ID3D12GraphicsCom
 		{
 			nReads = (UINT)::fread(&m_xmf3AABBCenter, sizeof(XMFLOAT3), 1, pInFile);
 			nReads = (UINT)::fread(&m_xmf3AABBExtents, sizeof(XMFLOAT3), 1, pInFile);
+			m_xmBoundingBox = BoundingOrientedBox(m_xmf3AABBCenter, m_xmf3AABBExtents, XMFLOAT4(0.f, 0.f, 0.f, 1.f));
 		}
 		else if (!strcmp(pstrToken, "<Positions>:"))
 		{
