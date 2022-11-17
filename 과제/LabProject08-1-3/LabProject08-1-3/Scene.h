@@ -82,7 +82,8 @@ public:
 	CShader								**m_ppShaders = NULL;
 
 	CSkyBox								*m_pSkyBox = NULL;
-	CHeightMapTerrain*					m_pTerrain = NULL;
+	CHeightMapTerrain					*m_pTerrain = NULL;
+	CEnemyShader						*m_pEnemyShader = NULL;
 
 	LIGHT								*m_pLights = NULL;
 	int									m_nLights = 0;
@@ -95,4 +96,9 @@ public:
 	TextureTransform					*m_pTrans = NULL;
 	ID3D12Resource						*m_pd3dcbTexTrans = NULL;
 	TextureTransform					*m_pcbMappedTexTrans = NULL;
+
+	CMissileShader						*m_pMissileShader = NULL;
+	bool								m_launchingMissile = false;
+	float								m_launchingStartTime = 0.f;
+
 };

@@ -569,6 +569,14 @@ void CGameObject::MoveForward(float fDistance)
 	CGameObject::SetPosition(xmf3Position);
 }
 
+void CGameObject::MoveDirection(float fDistance)
+{
+	XMFLOAT3 xmf3Position = GetPosition();
+	XMFLOAT3 xmf3Look = GetLook();
+	xmf3Position = Vector3::Add(xmf3Position, m_xmf3Direction, fDistance);
+	CGameObject::SetPosition(xmf3Position);
+}
+
 void CGameObject::Rotate(float fPitch, float fYaw, float fRoll)
 {
 	XMMATRIX mtxRotate = XMMatrixRotationRollPitchYaw(XMConvertToRadians(fPitch), XMConvertToRadians(fYaw), XMConvertToRadians(fRoll));
@@ -860,7 +868,7 @@ bool CGameObject::IsVisible(CCamera* pCamera)
 }
 
 
-bool CGameObject::IsCrashed(CPlayer* pPlayer)
+bool CGameObject::IsPECrashed(CPlayer* pPlayer)
 {
 	OnPrepareRender();
 	bool crashed = false;
@@ -1118,7 +1126,7 @@ void CGrassObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* p
 					m_ppMaterials[i]->UpdateShaderVariables(pd3dCommandList);
 				}
 
-				pd3dCommandList->SetGraphicsRootDescriptorTable(14, m_d3dCbvGPUDescriptorHandle);
+				pd3dCommandList->SetGraphicsRootDescriptorTable(15, m_d3dCbvGPUDescriptorHandle);
 
 				if (m_nMeshes == 1)
 				{
@@ -1134,7 +1142,7 @@ void CGrassObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* p
 				m_ppMaterials[0]->UpdateShaderVariables(pd3dCommandList);
 			}
 
-			pd3dCommandList->SetGraphicsRootDescriptorTable(14, m_d3dCbvGPUDescriptorHandle);
+			pd3dCommandList->SetGraphicsRootDescriptorTable(15, m_d3dCbvGPUDescriptorHandle);
 
 			if (m_ppMeshes)
 			{
@@ -1174,7 +1182,7 @@ void CWaterObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* p
 				m_ppMaterials[i]->UpdateShaderVariables(pd3dCommandList);
 			}
 
-			pd3dCommandList->SetGraphicsRootDescriptorTable(14, m_d3dCbvGPUDescriptorHandle);
+			pd3dCommandList->SetGraphicsRootDescriptorTable(15, m_d3dCbvGPUDescriptorHandle);
 
 			if (m_nMeshes == 1)
 			{
@@ -1190,7 +1198,62 @@ void CWaterObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* p
 			m_ppMaterials[0]->UpdateShaderVariables(pd3dCommandList);
 		}
 
-		pd3dCommandList->SetGraphicsRootDescriptorTable(14, m_d3dCbvGPUDescriptorHandle);
+		pd3dCommandList->SetGraphicsRootDescriptorTable(15, m_d3dCbvGPUDescriptorHandle);
+
+		if (m_ppMeshes)
+		{
+			for (int i = 0; i < m_nMeshes; i++)
+			{
+				if (m_ppMeshes[i]) m_ppMeshes[i]->Render(pd3dCommandList, 0);
+			}
+		}
+	}
+}
+
+CMissileObject::CMissileObject() : CGameObject(1, 1)
+{
+}
+
+CMissileObject::~CMissileObject()
+{
+}
+
+void CMissileObject::SetStartPosition(XMFLOAT3 xmf3StartPosition)
+{
+	m_xmf3StartPosition = xmf3StartPosition;
+}
+
+void CMissileObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
+{
+	OnPrepareRender();
+
+	if (m_nMaterials > 1)
+	{
+		for (int i = 0; i < m_nMaterials; i++)
+		{
+			if (m_ppMaterials[i])
+			{
+				if (m_ppMaterials[i]->m_pShader) m_ppMaterials[i]->m_pShader->Render(pd3dCommandList, pCamera);
+				m_ppMaterials[i]->UpdateShaderVariables(pd3dCommandList);
+			}
+
+			pd3dCommandList->SetGraphicsRootDescriptorTable(15, m_d3dCbvGPUDescriptorHandle);
+
+			if (m_nMeshes == 1)
+			{
+				if (m_ppMeshes[0]) m_ppMeshes[0]->Render(pd3dCommandList, i);
+			}
+		}
+	}
+	else
+	{
+		if ((m_nMaterials == 1) && (m_ppMaterials[0]))
+		{
+			if (m_ppMaterials[0]->m_pShader) m_ppMaterials[0]->m_pShader->Render(pd3dCommandList, pCamera);
+			m_ppMaterials[0]->UpdateShaderVariables(pd3dCommandList);
+		}
+
+		pd3dCommandList->SetGraphicsRootDescriptorTable(15, m_d3dCbvGPUDescriptorHandle);
 
 		if (m_ppMeshes)
 		{

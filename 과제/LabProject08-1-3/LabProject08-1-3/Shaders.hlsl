@@ -316,3 +316,12 @@ float4 PSWaterTextured(VS_TEXTURED_OUTPUT input) : SV_TARGET
 
 	return(cColor);
 }
+
+Texture2D gtxtMissileTexture : register(t19);
+
+float4 PSMissileTextured(VS_TEXTURED_OUTPUT input) : SV_TARGET
+{
+	float4 cColor = gtxtMissileTexture.Sample(gssWrap, input.uv);
+
+	return(cColor);
+}

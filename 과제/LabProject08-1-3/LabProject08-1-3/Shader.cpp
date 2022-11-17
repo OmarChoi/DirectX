@@ -286,6 +286,11 @@ void CShader::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamer
 	OnPrepareRender(pd3dCommandList, nPipelineState);
 }
 
+void CShader::Render(ID3D12GraphicsCommandList* pd3dCommandList, bool nStarting, CCamera* pCamera, CPlayer* pPlayer, int nPipelineState)
+{
+	OnPrepareRender(pd3dCommandList, nPipelineState);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 CSkyBoxShader::CSkyBoxShader()
@@ -889,49 +894,8 @@ CWaterShader::~CWaterShader()
 {
 }
 
-D3D12_RASTERIZER_DESC CWaterShader::CreateRasterizerState()
-{
-	D3D12_RASTERIZER_DESC d3dRasterizerDesc;
-	::ZeroMemory(&d3dRasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
-	d3dRasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-	//	d3dRasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
-	d3dRasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
-	d3dRasterizerDesc.FrontCounterClockwise = FALSE;
-	d3dRasterizerDesc.DepthBias = 0;
-	d3dRasterizerDesc.DepthBiasClamp = 0.0f;
-	d3dRasterizerDesc.SlopeScaledDepthBias = 0.0f;
-	d3dRasterizerDesc.DepthClipEnable = TRUE;
-	d3dRasterizerDesc.MultisampleEnable = FALSE;
-	d3dRasterizerDesc.AntialiasedLineEnable = FALSE;
-	d3dRasterizerDesc.ForcedSampleCount = 0;
-	d3dRasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
-
-	return(d3dRasterizerDesc);
-}
-
-D3D12_BLEND_DESC CWaterShader::CreateBlendState()
-{
-	D3D12_BLEND_DESC d3dBlendDesc;
-	::ZeroMemory(&d3dBlendDesc, sizeof(D3D12_BLEND_DESC));
-	d3dBlendDesc.AlphaToCoverageEnable = TRUE;
-	d3dBlendDesc.IndependentBlendEnable = TRUE;
-	d3dBlendDesc.RenderTarget[0].BlendEnable = TRUE;
-	d3dBlendDesc.RenderTarget[0].LogicOpEnable = FALSE;
-	d3dBlendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_DEST_COLOR;
-	d3dBlendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
-	d3dBlendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-	d3dBlendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
-	d3dBlendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
-	d3dBlendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
-	d3dBlendDesc.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
-	d3dBlendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
-	return(d3dBlendDesc);
-}
-
 void CWaterShader::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature, void* pContext)
 {
-
 	CTexture* ppWaterTexture;
 	ppWaterTexture = new CTexture(1, RESOURCE_TEXTURE2D, 0, 1);
 	ppWaterTexture->LoadTextureFromDDSFile(pd3dDevice, pd3dCommandList, L"Image/Water.dds", RESOURCE_TEXTURE2D, 0);
@@ -970,40 +934,84 @@ void CWaterShader::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandL
 		pWaterObject->SetMesh(0, pMesh);
 		pWaterObject->SetMaterial(0, pMaterial);
 
-		pWaterObject->SetPosition((float)(nTerrainWidth / 2) , 500.0f, (float)(nTerrainLength / 2));
+		pWaterObject->SetPosition((float)(nTerrainWidth / 2), 500.0f, (float)(nTerrainLength / 2));
 		pWaterObject->SetCbvGPUDescriptorHandlePtr(m_d3dCbvGPUDescriptorStartHandle.ptr);
 		m_ppObjects[0] = pWaterObject;
 	}
-
 }
 
-void CWaterShader::CreateShader(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature)
+void CWaterShader::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, CPlayer* pPlayer, int nPipelineState)
 {
-	m_nPipelineStates = 1;
-	m_ppd3dPipelineStates = new ID3D12PipelineState * [m_nPipelineStates];
-
-	CShader::CreateShader(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
-
-	if (m_pd3dVertexShaderBlob) m_pd3dVertexShaderBlob->Release();
-	if (m_pd3dPixelShaderBlob) m_pd3dPixelShaderBlob->Release();
-
-	if (m_d3dPipelineStateDesc.InputLayout.pInputElementDescs) delete[] m_d3dPipelineStateDesc.InputLayout.pInputElementDescs;
+	CObjectsShader::Render(pd3dCommandList, pCamera);
 }
 
-D3D12_INPUT_LAYOUT_DESC CWaterShader::CreateInputLayout()
+//D3D12_RASTERIZER_DESC CWaterShader::CreateRasterizerState()
+//{
+//	D3D12_RASTERIZER_DESC d3dRasterizerDesc;
+//	::ZeroMemory(&d3dRasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+//	d3dRasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+//	//	d3dRasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+//	d3dRasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+//	d3dRasterizerDesc.FrontCounterClockwise = FALSE;
+//	d3dRasterizerDesc.DepthBias = 0;
+//	d3dRasterizerDesc.DepthBiasClamp = 0.0f;
+//	d3dRasterizerDesc.SlopeScaledDepthBias = 0.0f;
+//	d3dRasterizerDesc.DepthClipEnable = TRUE;
+//	d3dRasterizerDesc.MultisampleEnable = FALSE;
+//	d3dRasterizerDesc.AntialiasedLineEnable = FALSE;
+//	d3dRasterizerDesc.ForcedSampleCount = 0;
+//	d3dRasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+//
+//	return(d3dRasterizerDesc);
+//}
+
+D3D12_BLEND_DESC CWaterShader::CreateBlendState()
 {
-	UINT nInputElementDescs = 2;
-	D3D12_INPUT_ELEMENT_DESC* pd3dInputElementDescs = new D3D12_INPUT_ELEMENT_DESC[nInputElementDescs];
+	D3D12_BLEND_DESC d3dBlendDesc;
+	::ZeroMemory(&d3dBlendDesc, sizeof(D3D12_BLEND_DESC));
+	d3dBlendDesc.AlphaToCoverageEnable = TRUE;
+	d3dBlendDesc.IndependentBlendEnable = TRUE;
+	d3dBlendDesc.RenderTarget[0].BlendEnable = TRUE;
+	d3dBlendDesc.RenderTarget[0].LogicOpEnable = FALSE;
+	d3dBlendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_DEST_COLOR;
+	d3dBlendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
+	d3dBlendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+	d3dBlendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+	d3dBlendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+	d3dBlendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	d3dBlendDesc.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
+	d3dBlendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-	pd3dInputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-	pd3dInputElementDescs[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-
-	D3D12_INPUT_LAYOUT_DESC d3dInputLayoutDesc;
-	d3dInputLayoutDesc.pInputElementDescs = pd3dInputElementDescs;
-	d3dInputLayoutDesc.NumElements = nInputElementDescs;
-
-	return(d3dInputLayoutDesc);
+	return(d3dBlendDesc);
 }
+
+//void CWaterShader::CreateShader(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature)
+//{
+//	m_nPipelineStates = 1;
+//	m_ppd3dPipelineStates = new ID3D12PipelineState * [m_nPipelineStates];
+//
+//	CShader::CreateShader(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
+//
+//	if (m_pd3dVertexShaderBlob) m_pd3dVertexShaderBlob->Release();
+//	if (m_pd3dPixelShaderBlob) m_pd3dPixelShaderBlob->Release();
+//
+//	if (m_d3dPipelineStateDesc.InputLayout.pInputElementDescs) delete[] m_d3dPipelineStateDesc.InputLayout.pInputElementDescs;
+//}
+//
+//D3D12_INPUT_LAYOUT_DESC CWaterShader::CreateInputLayout()
+//{
+//	UINT nInputElementDescs = 2;
+//	D3D12_INPUT_ELEMENT_DESC* pd3dInputElementDescs = new D3D12_INPUT_ELEMENT_DESC[nInputElementDescs];
+//
+//	pd3dInputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+//	pd3dInputElementDescs[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+//
+//	D3D12_INPUT_LAYOUT_DESC d3dInputLayoutDesc;
+//	d3dInputLayoutDesc.pInputElementDescs = pd3dInputElementDescs;
+//	d3dInputLayoutDesc.NumElements = nInputElementDescs;
+//
+//	return(d3dInputLayoutDesc);
+//}
 
 D3D12_SHADER_BYTECODE CWaterShader::CreateVertexShader()
 {
@@ -1036,7 +1044,7 @@ void CEnemyShader::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandL
 	float zPosition = xmf3Scale.z;
 	float fHeight = pTerrain->GetHeight(xPosition, zPosition);
 
-	m_nObjects = 15;
+	m_nObjects = 5;
 	m_ppObjects = new CGameObject * [m_nObjects];
 
 	CreateCbvSrvDescriptorHeaps(pd3dDevice, 0, 17 + 50); //SuperCobra(17), Gunship(2)
@@ -1065,7 +1073,7 @@ void CEnemyShader::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandL
 				pGunshipModel->AddRef();
 			}
 			XMFLOAT3 xmf3RandomPosition = RandomPositionInSphere(XMFLOAT3(920.0f, 0.0f, 1200.0f), Random(20.0f, 150.0f), h - int(floor(nColumnSize / 2.0f)), nColumnSpace);
-			m_ppObjects[nObjects]->SetPosition(xmf3RandomPosition.x, xmf3RandomPosition.y + 800.0f, xmf3RandomPosition.z);
+			m_ppObjects[nObjects]->SetPosition(xmf3RandomPosition.x, xmf3RandomPosition.y + 720.0f, xmf3RandomPosition.z);
 			m_ppObjects[nObjects]->Rotate(0.0f, 90.0f, 0.0f);
 
 			m_ppObjects[nObjects++]->PrepareAnimate();
@@ -1089,7 +1097,7 @@ void CEnemyShader::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandL
 				pGunshipModel->AddRef();
 			}
 			XMFLOAT3 xmf3RandomPosition = RandomPositionInSphere(XMFLOAT3(920.0f, 0.0f, 1200.0f), Random(20.0f, 150.0f), nColumnSize - int(floor(nColumnSize / 2.0f)), nColumnSpace);
-			m_ppObjects[nObjects]->SetPosition(xmf3RandomPosition.x, xmf3RandomPosition.y + 800.0f, xmf3RandomPosition.z);
+			m_ppObjects[nObjects]->SetPosition(xmf3RandomPosition.x, xmf3RandomPosition.y + 720.0f, xmf3RandomPosition.z);
 			m_ppObjects[nObjects]->Rotate(0.0f, 90.0f, 0.0f);
 			m_ppObjects[nObjects++]->PrepareAnimate();
 		}
@@ -1101,36 +1109,173 @@ void CEnemyShader::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandL
 void CEnemyShader::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, CPlayer* pPlayer, int nPipelineState)
 {
 
-	XMFLOAT3 xmf3PlayerPosition;
-	xmf3PlayerPosition.x = pPlayer->GetPosition().x;
-	xmf3PlayerPosition.y = pPlayer->GetPosition().y;
-	xmf3PlayerPosition.z = pPlayer->GetPosition().z;
-
-	for (int j = 0; j < m_nObjects; j++)
-	{
-		if (m_ppObjects[j]) m_ppObjects[j]->SetLookAt(m_ppObjects[j]->GetPosition(), xmf3PlayerPosition, m_ppObjects[j]->GetUp());
-	}
-
 	CShader::Render(pd3dCommandList, pCamera, NULL, nPipelineState);
+	if (pPlayer != NULL)
+	{
+		XMFLOAT3 xmf3PlayerPosition;
+		xmf3PlayerPosition.x = pPlayer->GetPosition().x;
+		xmf3PlayerPosition.y = pPlayer->GetPosition().y;
+		xmf3PlayerPosition.z = pPlayer->GetPosition().z;
+
+		for (int j = 0; j < m_nObjects; j++)
+		{
+			if (m_ppObjects[j]) m_ppObjects[j]->SetLookAt(m_ppObjects[j]->GetPosition(), xmf3PlayerPosition, m_ppObjects[j]->GetUp());
+		}
+
+
+		for (int j = 0; j < m_nObjects; j++)
+		{
+			if (m_ppObjects[j]->IsPECrashed(pPlayer))
+			{
+				m_ppObjects[j]->m_CharacterHP = 100.f;
+				pPlayer->m_CharacterHP -= 10.f;
+				SetRandomPosition(pPlayer, j);
+				printf("%f\n", pPlayer->m_CharacterHP);
+			}
+			// if (m_ppObjects[j]) m_ppObjects[j]->Render(pd3dCommandList, pCamera);
+			if (m_ppObjects[j])
+			{
+				m_ppObjects[j]->Animate(0.16f);
+				m_ppObjects[j]->MoveForward(1.0f);
+				m_ppObjects[j]->Render(pd3dCommandList, pCamera);
+			}
+		}
+	}
+}
+
+void CEnemyShader::SetRandomPosition(CPlayer* Player, int j)
+{
+	XMFLOAT3 xmf3PlayerPosition = Player->GetPosition();
+	int nColumnSpace = 5, nColumnSize = 5;
+	int nFirstPassColumnSize = (m_nObjects % nColumnSize) > 0 ? (nColumnSize - 1) : nColumnSize;
+	XMFLOAT3 xmf3RandomPosition = RandomPositionInSphere(XMFLOAT3(xmf3PlayerPosition.x, 0.f, xmf3PlayerPosition.z)
+		, Random(100.0f, 150.0f), nColumnSize - int(floor(nColumnSize / 2.0f)), nColumnSpace);
+	m_ppObjects[j]->SetLookAt(m_ppObjects[j]->GetPosition(), xmf3PlayerPosition, XMFLOAT3(0.f, 1.f, 0.f));
+	m_ppObjects[j]->SetPosition(xmf3RandomPosition.x, xmf3RandomPosition.y + 700.0f, xmf3RandomPosition.z);
+}
+
+void CEnemyShader::CheckCollision(CObjectsShader* pMShader, CPlayer* pPlayer)
+{
+	if (pMShader != NULL)
+	{
+		for (int i = 0; i < m_nObjects; i++)
+		{
+			BoundingOrientedBox xmBoundingBox = m_ppObjects[i]->GetBoundingBox();
+			xmBoundingBox.Transform(xmBoundingBox, XMLoadFloat4x4(&m_ppObjects[i]->m_xmf4x4World));
+			BoundingOrientedBox xmBoundingBox2 = pMShader->m_ppObjects[0]->GetBoundingBox();
+			xmBoundingBox2.Transform(xmBoundingBox2, XMLoadFloat4x4(&(pMShader->m_ppObjects[0]->m_xmf4x4World)));
+			if (xmBoundingBox2.Intersects(xmBoundingBox))
+			{
+				pMShader->SetRenderingState(false);
+				m_ppObjects[i]->m_CharacterHP -= 33.4f;
+				if (m_ppObjects[i]->m_CharacterHP < FLT_MIN)
+				{
+					m_ppObjects[i]->m_CharacterHP = 100.f;
+					SetRandomPosition(pPlayer, i);
+				}
+				printf("%d EnemyHp : %f\n",i, m_ppObjects[i]->m_CharacterHP);
+			}
+		}
+	}
+}
+
+CMissileShader::CMissileShader()
+{
+}
+
+CMissileShader::~CMissileShader()
+{
+}
+
+//D3D12_SHADER_BYTECODE CMissileShader::CreatePixelShader()
+//{
+//	return(CShader::CompileShaderFromFile(L"Shaders.hlsl", "PSMissileTextured", "ps_5_1", &m_pd3dPixelShaderBlob));
+//}
+
+void CMissileShader::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature, void* pContext)
+{
+	CTexture* ppMissileTexture;
+	ppMissileTexture = new CTexture(1, RESOURCE_TEXTURE2D, 0, 1);
+	ppMissileTexture->LoadTextureFromDDSFile(pd3dDevice, pd3dCommandList, L"Image/Missile.dds", RESOURCE_TEXTURE2D, 0);
+
+	CMaterial* ppMissileMaterial;
+	ppMissileMaterial = new CMaterial();
+	ppMissileMaterial->SetTexture(ppMissileTexture);
+
+	CTexturedRectMesh* pMissileMesh = new CTexturedRectMesh(pd3dDevice, pd3dCommandList, 1, 10.f, 15.f, 0.f, 0.0f, 0.0f, 0.0f);
+
+	m_nObjects = 1;
+	m_ppObjects = new CGameObject * [m_nObjects];
+
+	UINT ncbElementBytes = ((sizeof(CB_GAMEOBJECT_INFO) + 255) & ~255);
+
+	CreateCbvSrvDescriptorHeaps(pd3dDevice, m_nObjects, 1);
+	CreateShaderVariables(pd3dDevice, pd3dCommandList);
+	CreateConstantBufferViews(pd3dDevice, m_nObjects, m_pd3dcbGameObjects, ncbElementBytes);
+	CreateShaderResourceViews(pd3dDevice, ppMissileTexture, 0, 12);
+
+	CMaterial* pMaterial = NULL;
+	CMesh* pMesh = NULL;
+
+	pMesh = pMissileMesh;
+	pMaterial = ppMissileMaterial;
 
 	for (int j = 0; j < m_nObjects; j++)
 	{
-		if (m_ppObjects[j]->IsCrashed(pPlayer))
+		if (pMesh && pMaterial)
 		{
-			int nColumnSpace = 5, nColumnSize = 5;
-			int nFirstPassColumnSize = (m_nObjects % nColumnSize) > 0 ? (nColumnSize - 1) : nColumnSize;
-			XMFLOAT3 xmf3RandomPosition = RandomPositionInSphere(XMFLOAT3(xmf3PlayerPosition.x, 0.f, xmf3PlayerPosition.z)
-									, Random(100.0f, 150.0f), nColumnSize - int(floor(nColumnSize / 2.0f)), nColumnSpace);
-			m_ppObjects[j]->SetLookAt(m_ppObjects[j]->GetPosition(), xmf3PlayerPosition, XMFLOAT3(0.f,1.f,0.f));
-			m_ppObjects[j]->SetPosition(xmf3RandomPosition.x, xmf3RandomPosition.y + 700.0f, xmf3RandomPosition.z);
-		}
-		// if (m_ppObjects[j]) m_ppObjects[j]->Render(pd3dCommandList, pCamera);
-		if (m_ppObjects[j])
-		{
-			m_ppObjects[j]->Animate(0.16f);
-			m_ppObjects[j]->MoveForward(1.0f);
-			m_ppObjects[j]->Render(pd3dCommandList, pCamera);
+			CMissileObject* pMissileObject = new CMissileObject();
+			pMissileObject->SetMesh(0, pMesh);
+			pMissileObject->SetMaterial(0, pMaterial);
+			pMissileObject->SetCbvGPUDescriptorHandlePtr(m_d3dCbvGPUDescriptorStartHandle.ptr + (::gnCbvSrvDescriptorIncrementSize * j));
+			m_ppObjects[j] = pMissileObject;
 		}
 	}
+}
 
+void CMissileShader::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, CPlayer* pPlayer, int nPipelineState)
+{
+	
+	if (Vector3::Length(Vector3::Subtract(m_ppObjects[0]->GetPosition(), m_xmf3StartingPos)) < 100.f)
+	{
+		CShader::Render(pd3dCommandList, pCamera, NULL, nPipelineState);
+
+		for (int j = 0; j < m_nObjects; j++)
+		{
+			if (m_ppObjects[j])
+			{
+				m_ppObjects[j]->MoveDirection(5.0f);
+				m_ppObjects[j]->Render(pd3dCommandList, pCamera);
+			}
+		}
+	}
+	else
+	{
+		m_bOnRendering = false;
+	}
+}
+
+void CMissileShader::InitMissile(CCamera* pCamera, CPlayer* pPlayer)
+{
+	if (!m_bOnRendering)
+	{
+		XMFLOAT3 xmf3CameraPosition = pCamera->GetPosition();
+
+		for (int j = 0; j < m_nObjects; j++)
+		{
+			XMFLOAT3 xmf3Look = Vector3::Normalize(Vector3::Subtract(xmf3CameraPosition, m_ppObjects[j]->GetPosition()));
+			XMFLOAT3 xmf3Right = Vector3::CrossProduct(m_ppObjects[j]->GetUp(), xmf3Look, true);
+			XMFLOAT3 xmf3UP = pPlayer->GetLookVector();
+			m_ppObjects[j]->m_xmf4x4Transform._11 = xmf3Right.x; m_ppObjects[j]->m_xmf4x4Transform._12 = xmf3Right.y; m_ppObjects[j]->m_xmf4x4Transform._13 = xmf3Right.z;
+			m_ppObjects[j]->m_xmf4x4Transform._21 = xmf3UP.x; m_ppObjects[j]->m_xmf4x4Transform._22 = xmf3UP.y; m_ppObjects[j]->m_xmf4x4Transform._23 = xmf3UP.z;
+			m_ppObjects[j]->m_xmf4x4Transform._31 = xmf3Look.x;  m_ppObjects[j]->m_xmf4x4Transform._32 = xmf3Look.y;  m_ppObjects[j]->m_xmf4x4Transform._33 = xmf3Look.z;
+		}
+
+		for (int j = 0; j < m_nObjects; j++)
+		{
+			m_ppObjects[j]->SetDirection(pPlayer->GetLookVector());
+			m_ppObjects[j]->SetPosition(pPlayer->GetPosition().x + pPlayer->GetLookVector().x, pPlayer->GetPosition().y - 5.f, pPlayer->GetPosition().z + pPlayer->GetLookVector().z);
+			m_xmf3StartingPos = { pPlayer->GetPosition().x + pPlayer->GetLookVector().x, pPlayer->GetPosition().y - 5.f, pPlayer->GetPosition().z + pPlayer->GetLookVector().z };
+		}
+	}
 }

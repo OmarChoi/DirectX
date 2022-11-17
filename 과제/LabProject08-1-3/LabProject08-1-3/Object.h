@@ -190,12 +190,14 @@ public:
 public:
 	char							m_pstrFrameName[64];
 
+	float							m_CharacterHP = 100.f;
 	int								m_nMeshes = 0;
 	CMesh**							m_ppMeshes = NULL;
 
 	int								m_nMaterials = 0;
 	CMaterial						**m_ppMaterials = NULL;
 
+	XMFLOAT3						m_xmf3Direction;
 	XMFLOAT4X4						m_xmf4x4Transform;
 	XMFLOAT4X4						m_xmf4x4World;
 
@@ -241,10 +243,13 @@ public:
 	void SetPosition(float x, float y, float z);
 	void SetPosition(XMFLOAT3 xmf3Position);
 	void SetScale(float x, float y, float z);
+	void SetDirection(XMFLOAT3 xmf3Direction) { m_xmf3Direction = xmf3Direction; }
+	virtual void SetStartPosition(XMFLOAT3 xmf3StartPosition) {};
 
 	void MoveStrafe(float fDistance = 1.0f);
 	void MoveUp(float fDistance = 1.0f);
 	void MoveForward(float fDistance = 1.0f);
+	void MoveDirection(float fDistance = 1.0f);
 
 	void Rotate(float fPitch = 10.0f, float fYaw = 10.0f, float fRoll = 10.0f);
 	void Rotate(XMFLOAT3 *pxmf3Axis, float fAngle);
@@ -271,7 +276,7 @@ public:
 	BoundingOrientedBox GetBoundingBox() { return m_xmBoundingBox; }
 
 	bool IsVisible(CCamera* pCamera = NULL);
-	bool IsCrashed(CPlayer* pPlayer = NULL);
+	bool IsPECrashed(CPlayer* pPlayer = NULL);
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -378,7 +383,22 @@ class CWaterObject : public CGameObject
 {
 public:
 	CWaterObject();
-	virtual void Animate(float fTimeElapsed);
 	virtual ~CWaterObject();
+	virtual void Animate(float fTimeElapsed);
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera);
+};
+
+class CMissileObject : public CGameObject
+{
+	XMFLOAT3						m_xmf3StartPosition;
+	XMFLOAT3						m_xmf3AABBCenter = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	XMFLOAT3						m_xmf3AABBExtents = XMFLOAT3(5.0f, 7.5f, 0.0f);
+	
+	BoundingOrientedBox				m_xmBoundingBox = BoundingOrientedBox(m_xmf3AABBCenter, m_xmf3AABBExtents, 
+		XMFLOAT4(m_xmf3Direction.x, m_xmf3Direction.y, m_xmf3Direction.z, 1.f));
+public:
+	CMissileObject();
+	virtual ~CMissileObject();
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera);
+	virtual void SetStartPosition(XMFLOAT3 xmf3StartPosition);
 };
