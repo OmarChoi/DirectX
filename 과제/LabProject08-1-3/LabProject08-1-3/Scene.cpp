@@ -83,9 +83,24 @@ void CScene::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *p
 
 	//m_ppShaders[0] = pObjectsShader;
 
+	m_pUIShader = new UIShader();
+	m_pUIShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+	m_pUIShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, NULL);
+
+	m_pEnemyShader = new CEnemyShader();
+	m_pEnemyShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+	m_pEnemyShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, m_pTerrain);
+
+	m_pMissileShader = new CMissileShader();
+	m_pMissileShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+	m_pMissileShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, m_pTerrain);
+
+	m_pSpriteShader = new CMultiSpriteObjectsShader();
+	m_pSpriteShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+	m_pSpriteShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+
 	m_nShaders = 2;
 	m_ppShaders = new CShader * [m_nShaders];
-
 
 	CWaterShader* pWaterObjectShader = new CWaterShader();
 	pWaterObjectShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
@@ -97,13 +112,6 @@ void CScene::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *p
 	pBillboardObjectShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, m_pTerrain);
 	m_ppShaders[1] = pBillboardObjectShader;
 
-	m_pEnemyShader = new CEnemyShader();
-	m_pEnemyShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
-	m_pEnemyShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, m_pTerrain);
-
-	m_pMissileShader = new CMissileShader();
-	m_pMissileShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
-	m_pMissileShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, m_pTerrain);
 
 	CreateShaderVariables(pd3dDevice, pd3dCommandList);
 }
@@ -136,7 +144,7 @@ ID3D12RootSignature *CScene::CreateGraphicsRootSignature(ID3D12Device *pd3dDevic
 {
 	ID3D12RootSignature *pd3dGraphicsRootSignature = NULL;
 
-	D3D12_DESCRIPTOR_RANGE pd3dDescriptorRanges[13];
+	D3D12_DESCRIPTOR_RANGE pd3dDescriptorRanges[14];
 
 	pd3dDescriptorRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	pd3dDescriptorRanges[0].NumDescriptors = 1;
@@ -300,11 +308,11 @@ ID3D12RootSignature *CScene::CreateGraphicsRootSignature(ID3D12Device *pd3dDevic
 	pd3dRootParameters[15].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
 	pd3dRootParameters[16].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	pd3dRootParameters[16].Descriptor.ShaderRegister = 5; //TextureTransform
+	pd3dRootParameters[16].Descriptor.ShaderRegister = 5;
 	pd3dRootParameters[16].Descriptor.RegisterSpace = 0;
 	pd3dRootParameters[16].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
-	D3D12_STATIC_SAMPLER_DESC pd3dSamplerDescs[2];
+	D3D12_STATIC_SAMPLER_DESC pd3dSamplerDescs[3];
 
 	pd3dSamplerDescs[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
 	pd3dSamplerDescs[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
@@ -331,6 +339,20 @@ ID3D12RootSignature *CScene::CreateGraphicsRootSignature(ID3D12Device *pd3dDevic
 	pd3dSamplerDescs[1].ShaderRegister = 1;
 	pd3dSamplerDescs[1].RegisterSpace = 0;
 	pd3dSamplerDescs[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+	pd3dSamplerDescs[2].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+	pd3dSamplerDescs[2].AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	pd3dSamplerDescs[2].AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	pd3dSamplerDescs[2].AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	pd3dSamplerDescs[2].MipLODBias = 0;
+	pd3dSamplerDescs[2].MaxAnisotropy = 1;
+	pd3dSamplerDescs[2].ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	pd3dSamplerDescs[2].BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+	pd3dSamplerDescs[2].MinLOD = 0;
+	pd3dSamplerDescs[2].MaxLOD = D3D12_FLOAT32_MAX;
+	pd3dSamplerDescs[2].ShaderRegister = 2;
+	pd3dSamplerDescs[2].RegisterSpace = 0;
+	pd3dSamplerDescs[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 	D3D12_ROOT_SIGNATURE_FLAGS d3dRootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 	D3D12_ROOT_SIGNATURE_DESC d3dRootSignatureDesc;
@@ -373,6 +395,7 @@ void CScene::UpdateShaderVariables(ID3D12GraphicsCommandList *pd3dCommandList)
 
 
 	m_pTrans->m_xmf3Transform = (float)fmod(m_fTimeElapsed,100) * 0.01;
+	m_pTrans->m_xmf3PlayerHp = (float)(1.f - m_pPlayer->m_CharacterHP / 100.f);
 	::memcpy(m_pcbMappedTexTrans, m_pTrans, sizeof(TextureTransform));
 }
 
@@ -422,6 +445,7 @@ bool CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wPar
 		switch (wParam)
 		{
 		case VK_SPACE: 
+			m_pSpriteShader->SetRenderingState(false);
 			m_pMissileShader->SetRenderingState(true);
 			break;
 		//case 'W': m_ppGameObjects[0]->MoveForward(+1.0f); break;
@@ -481,7 +505,9 @@ void CScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera
 
 	if (m_pSkyBox) m_pSkyBox->Render(pd3dCommandList, pCamera);
 	if (m_pTerrain) m_pTerrain->Render(pd3dCommandList, pCamera);
-	for (int i = 0; i < m_nShaders; i++)
+	if (m_pUIShader) m_pUIShader->Render(pd3dCommandList, pCamera, m_pPlayer);
+
+	for (int i = 0; i < m_nShaders ; i++)
 		if (m_ppShaders[i])
 			m_ppShaders[i]->Render(pd3dCommandList, pCamera, m_pPlayer);
 
@@ -489,14 +515,19 @@ void CScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera
 
 	if (m_pEnemyShader)
 	{
-		m_pEnemyShader->CheckCollision(m_pMissileShader, m_pPlayer);
+		m_pEnemyShader->CheckCollision(m_pMissileShader, m_pPlayer, m_pSpriteShader);
 		m_pEnemyShader->Render(pd3dCommandList, pCamera, m_pPlayer);
 	}
+
 	if (m_pMissileShader->GetRenderingState())
 	{
 		m_pMissileShader->Render(pd3dCommandList, pCamera, m_pPlayer);
 		m_launchingMissile = false;
 	}
-	// m_ppShaders[1]->Render(pd3dCommandList, pCamera);
+
+	if (m_pSpriteShader->GetRenderingState())
+	{
+		m_pSpriteShader->Render(pd3dCommandList, pCamera, m_pPlayer);
+	}
 }
 

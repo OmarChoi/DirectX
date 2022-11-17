@@ -867,7 +867,6 @@ bool CGameObject::IsVisible(CCamera* pCamera)
 	return false;
 }
 
-
 bool CGameObject::IsPECrashed(CPlayer* pPlayer)
 {
 	OnPrepareRender();
@@ -879,10 +878,10 @@ bool CGameObject::IsPECrashed(CPlayer* pPlayer)
 	if (pPlayer)
 	{
 		crashed = xmBoundingBox2.Intersects(xmBoundingBox);
+
 	}
 	return(crashed);
 }
-
 
 CGameObject *CGameObject::LoadGeometryFromFile(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, ID3D12RootSignature *pd3dGraphicsRootSignature, char *pstrFileName, CShader *pShader)
 {
@@ -1224,6 +1223,109 @@ void CMissileObject::SetStartPosition(XMFLOAT3 xmf3StartPosition)
 }
 
 void CMissileObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
+{
+	OnPrepareRender();
+
+	if (m_nMaterials > 1)
+	{
+		for (int i = 0; i < m_nMaterials; i++)
+		{
+			if (m_ppMaterials[i])
+			{
+				if (m_ppMaterials[i]->m_pShader) m_ppMaterials[i]->m_pShader->Render(pd3dCommandList, pCamera);
+				m_ppMaterials[i]->UpdateShaderVariables(pd3dCommandList);
+			}
+
+			pd3dCommandList->SetGraphicsRootDescriptorTable(15, m_d3dCbvGPUDescriptorHandle);
+
+			if (m_nMeshes == 1)
+			{
+				if (m_ppMeshes[0]) m_ppMeshes[0]->Render(pd3dCommandList, i);
+			}
+		}
+	}
+	else
+	{
+		if ((m_nMaterials == 1) && (m_ppMaterials[0]))
+		{
+			if (m_ppMaterials[0]->m_pShader) m_ppMaterials[0]->m_pShader->Render(pd3dCommandList, pCamera);
+			m_ppMaterials[0]->UpdateShaderVariables(pd3dCommandList);
+		}
+
+		pd3dCommandList->SetGraphicsRootDescriptorTable(15, m_d3dCbvGPUDescriptorHandle);
+
+		if (m_ppMeshes)
+		{
+			for (int i = 0; i < m_nMeshes; i++)
+			{
+				if (m_ppMeshes[i]) m_ppMeshes[i]->Render(pd3dCommandList, 0);
+			}
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 
+
+CMultiSpriteObject::CMultiSpriteObject() : CGameObject(1, 1)
+{
+}
+
+CMultiSpriteObject::~CMultiSpriteObject()
+{
+}
+
+void CMultiSpriteObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
+{
+	OnPrepareRender();
+
+	if (m_nMaterials > 1)
+	{
+		for (int i = 0; i < m_nMaterials; i++)
+		{
+			if (m_ppMaterials[i])
+			{
+				if (m_ppMaterials[i]->m_pShader) m_ppMaterials[i]->m_pShader->Render(pd3dCommandList, pCamera);
+				m_ppMaterials[i]->UpdateShaderVariables(pd3dCommandList);
+			}
+
+			pd3dCommandList->SetGraphicsRootDescriptorTable(15, m_d3dCbvGPUDescriptorHandle);
+
+			if (m_nMeshes == 1)
+			{
+				if (m_ppMeshes[0]) m_ppMeshes[0]->Render(pd3dCommandList, i);
+			}
+		}
+	}
+	else
+	{
+		if ((m_nMaterials == 1) && (m_ppMaterials[0]))
+		{
+			if (m_ppMaterials[0]->m_pShader) m_ppMaterials[0]->m_pShader->Render(pd3dCommandList, pCamera);
+			m_ppMaterials[0]->UpdateShaderVariables(pd3dCommandList);
+		}
+
+		pd3dCommandList->SetGraphicsRootDescriptorTable(15, m_d3dCbvGPUDescriptorHandle);
+
+		if (m_ppMeshes)
+		{
+			for (int i = 0; i < m_nMeshes; i++)
+			{
+				if (m_ppMeshes[i]) m_ppMeshes[i]->Render(pd3dCommandList, 0);
+			}
+		}
+	}
+}
+
+CUIObject::CUIObject() : CGameObject(1, 1)
+{
+}
+
+CUIObject::~CUIObject()
+{
+}
+
+void CUIObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
 {
 	OnPrepareRender();
 

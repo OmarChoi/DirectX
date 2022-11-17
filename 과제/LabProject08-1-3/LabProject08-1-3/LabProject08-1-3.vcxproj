@@ -104,6 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -151,9 +152,13 @@
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="Player.cpp" />
-    <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="Scene.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="WICTextureLoader12.cpp" />
   </ItemGroup>

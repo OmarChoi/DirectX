@@ -406,7 +406,7 @@ void CGameFramework::BuildObjects()
 
 	m_pScene = new CScene();
 	if (m_pScene) m_pScene->BuildObjects(m_pd3dDevice, m_pd3dCommandList);
-
+	
 	CAirplanePlayer *pAirplanePlayer = new CAirplanePlayer(m_pd3dDevice, m_pd3dCommandList, m_pScene->GetGraphicsRootSignature());
 	pAirplanePlayer->SetPosition(XMFLOAT3(920.0f, 745.0f, 1270.0));
 	m_pScene->m_pPlayer = m_pPlayer = pAirplanePlayer;

@@ -109,6 +109,13 @@ public:
 	D3D12_SHADER_RESOURCE_VIEW_DESC GetShaderResourceViewDesc(int nIndex);
 
 	void ReleaseUploadBuffers();
+	void AnimateRowColumn(float fTime);
+
+public:
+	int 							m_nRow = 0;
+	int 							m_nCol = 0;
+	int 							m_nRows = 1;
+	int 							m_nCols = 1;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -172,7 +179,7 @@ class CGameObject
 {
 protected:
 	XMFLOAT3						m_xmf3AABBCenter = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	XMFLOAT3						m_xmf3AABBExtents = XMFLOAT3(4.0f, 4.0f, 9.0f);
+	XMFLOAT3						m_xmf3AABBExtents = XMFLOAT3(2.0f, 2.0f, 5.0f);
 	BoundingOrientedBox				m_xmBoundingBox = BoundingOrientedBox(m_xmf3AABBCenter, m_xmf3AABBExtents, XMFLOAT4(GetLook().x, GetLook().y, GetLook().z, 1.f));
 
 private:
@@ -207,7 +214,8 @@ public:
 
 	D3D12_GPU_DESCRIPTOR_HANDLE		m_d3dCbvGPUDescriptorHandle;
 	CB_GAMEOBJECT_INFO				*m_pcbMappedGameObject = NULL;
-
+	ID3D12Resource					*m_pd3dcbGameObject = NULL;
+	
 	virtual void SetMesh(int nIndex, CMesh* pMesh);
 	void SetShader(int nMaterial, CShader *pShader);
 	void SetMaterial(int nMaterial, CMaterial *pMaterial);
@@ -401,4 +409,26 @@ public:
 	virtual ~CMissileObject();
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera);
 	virtual void SetStartPosition(XMFLOAT3 xmf3StartPosition);
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+class CMultiSpriteObject : public CGameObject
+{
+public:
+	CMultiSpriteObject();
+	virtual ~CMultiSpriteObject();
+
+	float m_fSpeed = 0.1f;
+	float m_fTime = 0.0f;
+
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera);
+};
+
+class CUIObject : public CGameObject
+{
+public:
+	CUIObject();
+	virtual ~CUIObject();
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera);
 };

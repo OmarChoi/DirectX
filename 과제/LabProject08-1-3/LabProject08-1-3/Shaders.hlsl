@@ -6,6 +6,12 @@ struct MATERIAL
 	float4					m_cEmissive;
 };
 
+struct Transform
+{
+	float gmtxTextureTransform;
+	float gfCharacterHP;
+};
+
 cbuffer cbCameraInfo : register(b1)
 {
 	matrix		gmtxView : packoffset(c0);
@@ -20,14 +26,14 @@ cbuffer cbGameObjectInfo : register(b2)
 	uint		gnTexturesMask : packoffset(c8);
 };
 
-cbuffer cbGameObjectInfo2 : register(b3)
+cbuffer cbTextureObjectInfo2 : register(b3)
 {
 	matrix		gmtxTexturedObject : packoffset(c0);
 };
 
 cbuffer cbTextureTransform : register(b5)
 {	
-	float gmtxTextureTransform : packoffset(c0);
+	Transform gTrans : packoffset(c0);
 };
 
 #include "Light.hlsl"
@@ -60,6 +66,7 @@ Texture2D gtxtStandardTextures[7] : register(t6);
 
 SamplerState gssWrap : register(s0);
 SamplerState gssClamp : register(s1);
+SamplerState gssBorder : register(s2);
 
 struct VS_STANDARD_INPUT
 {
@@ -163,30 +170,6 @@ float4 PSSkyBox(VS_SKYBOX_CUBEMAP_OUTPUT input) : SV_TARGET
 	return(cColor);
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-struct VS_SPRITE_TEXTURED_INPUT
-{
-	float3 position : POSITION;
-	float2 uv : TEXCOORD;
-};
-
-struct VS_SPRITE_TEXTURED_OUTPUT
-{
-	float4 position : SV_POSITION;
-	float2 uv : TEXCOORD;
-};
-
-VS_SPRITE_TEXTURED_OUTPUT VSTextured(VS_SPRITE_TEXTURED_INPUT input)
-{
-	VS_SPRITE_TEXTURED_OUTPUT output;
-
-	output.position = mul(mul(mul(float4(input.position, 1.0f), gmtxGameObject), gmtxView), gmtxProjection);
-	output.uv = input.uv;
-
-	return(output);
-}
-
 /*
 float4 PSTextured(VS_SPRITE_TEXTURED_OUTPUT input, uint nPrimitiveID : SV_PrimitiveID) : SV_TARGET
 {
@@ -214,13 +197,6 @@ float4 PSTextured(VS_SPRITE_TEXTURED_OUTPUT input, uint nPrimitiveID : SV_Primit
 Texture2D gtxtTerrainTexture : register(t14);
 Texture2D gtxtDetailTexture : register(t15);
 Texture2D gtxtAlphaTexture : register(t16);
-
-float4 PSTextured(VS_SPRITE_TEXTURED_OUTPUT input) : SV_TARGET
-{
-	float4 cColor = gtxtTerrainTexture.Sample(gssWrap, input.uv);
-
-	return(cColor);
-}
 
 struct VS_TERRAIN_INPUT
 {
@@ -303,8 +279,8 @@ VS_TEXTURED_OUTPUT VSWaterTextured(VS_TEXTURED_INPUT input)
 	VS_TEXTURED_OUTPUT output;
 
 	output.position = mul(mul(mul(float4(input.position, 1.0f), gmtxTexturedObject), gmtxView), gmtxProjection);
-	output.uv.x = input.uv.x + gmtxTextureTransform;
-	output.uv.y = input.uv.y + gmtxTextureTransform;
+	output.uv.x = input.uv.x + gTrans.gmtxTextureTransform;
+	output.uv.y = input.uv.y + gTrans.gmtxTextureTransform;
 	//output.uv = mul(float3(input.uv, 1.0f), gmtxTextureTransform);
 
 	return(output);
@@ -312,7 +288,7 @@ VS_TEXTURED_OUTPUT VSWaterTextured(VS_TEXTURED_INPUT input)
 
 float4 PSWaterTextured(VS_TEXTURED_OUTPUT input) : SV_TARGET
 {
-	float4 cColor = gtxtWaterTexture.Sample(gssWrap, input.uv);
+	float4 cColor = gtxtBillboardTexture.Sample(gssWrap, input.uv);
 
 	return(cColor);
 }
@@ -321,7 +297,62 @@ Texture2D gtxtMissileTexture : register(t19);
 
 float4 PSMissileTextured(VS_TEXTURED_OUTPUT input) : SV_TARGET
 {
-	float4 cColor = gtxtMissileTexture.Sample(gssWrap, input.uv);
+	float4 cColor = gtxtBillboardTexture.Sample(gssWrap, input.uv);
+
+	return(cColor);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+struct VS_SPRITE_TEXTURED_INPUT
+{
+	float3 position : POSITION;
+	float2 uv : TEXCOORD;
+};
+
+struct VS_SPRITE_TEXTURED_OUTPUT
+{
+	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD;
+};
+
+VS_SPRITE_TEXTURED_OUTPUT VSSpriteTextured(VS_SPRITE_TEXTURED_INPUT input)
+{
+	int index = gTrans.gmtxTextureTransform * 1000000;
+	VS_SPRITE_TEXTURED_OUTPUT output;
+
+	output.position = mul(mul(mul(float4(input.position, 1.0f), gmtxTexturedObject), gmtxView), gmtxProjection);
+	//output.uv.x = input.uv.x + (gmtxTextureTransform / 1);
+	output.uv.x = input.uv.x + 0.125f * index;
+	output.uv.y = input.uv.y;
+
+	return(output);
+}
+
+float4 PSSpriteTextured(VS_SPRITE_TEXTURED_OUTPUT input) : SV_TARGET
+{
+	float4 cColor = gtxtBillboardTexture.Sample(gssWrap, input.uv);
+
+	return(cColor);
+}
+
+
+VS_TEXTURED_OUTPUT VSUITextured(VS_TEXTURED_INPUT input)
+{
+	VS_TEXTURED_OUTPUT output;
+
+	output.position = mul(mul(mul(float4(input.position, 1.0f), gmtxTexturedObject), gmtxView), gmtxProjection);
+	output.uv.x = input.uv.x + gTrans.gfCharacterHP;
+	//output.uv.x = gfCharacterHP;gmtxTextureTransform
+	output.uv.y = input.uv.y;
+
+	return(output);
+}
+
+float4 PSUITextured(VS_TEXTURED_OUTPUT input) : SV_TARGET
+{
+	float4 cColor = gtxtBillboardTexture.Sample(gssBorder, input.uv);
 
 	return(cColor);
 }

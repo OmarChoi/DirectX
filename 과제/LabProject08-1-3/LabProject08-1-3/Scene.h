@@ -40,6 +40,7 @@ struct LIGHTS
 struct TextureTransform
 {
 	float m_xmf3Transform;
+	float m_xmf3PlayerHp;
 };
 
 class CScene
@@ -101,4 +102,6 @@ public:
 	bool								m_launchingMissile = false;
 	float								m_launchingStartTime = 0.f;
 
+	CMultiSpriteObjectsShader			*m_pSpriteShader = NULL;
+	UIShader							*m_pUIShader = NULL;
 };

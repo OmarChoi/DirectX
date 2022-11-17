@@ -163,6 +163,8 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
+class CMultiSpriteObjectsShader;
+
 class CEnemyShader : public CObjectsShader
 {
 public:
@@ -172,7 +174,7 @@ public:
 	virtual void BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature, void* pContext = NULL);
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, CPlayer *pPlayer = NULL, int nPipelineState = 0);
 	void SetRandomPosition(CPlayer* Player, int j);
-	void CheckCollision(CObjectsShader *pMShader, CPlayer* pPlayer);
+	void CheckCollision(CObjectsShader *pMShader, CPlayer* pPlayer, CMultiSpriteObjectsShader* pEffect);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -236,14 +238,50 @@ public:
 class CMissileShader : public CBillboardObjectsShader
 {
 	XMFLOAT3 m_xmf3StartingPos;
+
 public:
 	CMissileShader();
 	virtual ~CMissileShader();
 
 	// virtual void CreateShader(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature);
-	// D3D12_SHADER_BYTECODE CreatePixelShader();
+	D3D12_SHADER_BYTECODE CreatePixelShader();
 	virtual void BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature, void* pContext);
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, CPlayer* pPlayer = NULL, int nPipelineState = 0);
 
 	void InitMissile(CCamera* pCamera, CPlayer* pPlayer);
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+class CMultiSpriteObjectsShader : public CBillboardObjectsShader
+{
+	int f_time = 0;
+public:
+	CMultiSpriteObjectsShader();
+	virtual ~CMultiSpriteObjectsShader();
+
+	//virtual D3D12_RASTERIZER_DESC CreateRasterizerState();
+	//virtual D3D12_BLEND_DESC CreateBlendState();
+
+	virtual D3D12_SHADER_BYTECODE CreateVertexShader();
+	virtual D3D12_SHADER_BYTECODE CreatePixelShader();
+	virtual void BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, void* pContext = NULL);
+
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, CPlayer* pPlayer = NULL, int nPipelineState = 0);
+};
+
+
+class UIShader : public CBillboardObjectsShader
+{
+public:
+	UIShader();
+	virtual ~UIShader();
+
+	D3D12_BLEND_DESC CreateBlendState();
+
+	D3D12_SHADER_BYTECODE CreateVertexShader();
+	D3D12_SHADER_BYTECODE CreatePixelShader();
+
+	virtual void BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature, void* pContext);
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, CPlayer* pPlayer = NULL, int nPipelineState = 0);
 };
