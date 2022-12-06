@@ -16,7 +16,8 @@ cbuffer cbCameraInfo : register(b1)
 {
 	matrix		gmtxView : packoffset(c0);
 	matrix		gmtxProjection : packoffset(c4);
-	float3		gvCameraPosition : packoffset(c8);
+	matrix		gmtxInverseView : packoffset(c8);
+	float3		gvCameraPosition : packoffset(c12);
 };
 
 cbuffer cbGameObjectInfo : register(b2)
@@ -32,8 +33,18 @@ cbuffer cbTextureObjectInfo2 : register(b3)
 };
 
 cbuffer cbTextureTransform : register(b5)
-{	
+{
 	Transform gTrans : packoffset(c0);
+};
+
+cbuffer cbFrameworkInfo : register(b6)
+{
+	float		gfCurrentTime : packoffset(c0.x);
+	float		gfElapsedTime : packoffset(c0.y);
+	float		gfSecondsPerFirework : packoffset(c0.z);
+	int			gnFlareParticlesToEmit : packoffset(c0.w);;
+	float3		gf3Gravity : packoffset(c1.x);
+	int			gnMaxFlareType2Particles : packoffset(c1.w);;
 };
 
 #include "Light.hlsl"
@@ -53,6 +64,10 @@ cbuffer cbTextureTransform : register(b5)
 #define _WITH_STANDARD_TEXTURE_MULTIPLE_DESCRIPTORS
 
 #ifdef _WITH_STANDARD_TEXTURE_MULTIPLE_DESCRIPTORS
+Texture2D<float4> gtxtParticleTexture : register(t1);
+//Texture1D<float4> gtxtRandom : register(t2);
+Buffer<float4> gRandomBuffer : register(t2);
+Buffer<float4> gRandomSphereBuffer : register(t3);
 Texture2D gtxtAlbedoTexture : register(t6);
 Texture2D gtxtSpecularTexture : register(t7);
 Texture2D gtxtNormalTexture : register(t8);
@@ -63,6 +78,7 @@ Texture2D gtxtDetailNormalTexture : register(t12);
 #else
 Texture2D gtxtStandardTextures[7] : register(t6);
 #endif
+
 
 SamplerState gssWrap : register(s0);
 SamplerState gssClamp : register(s1);
@@ -323,7 +339,6 @@ VS_SPRITE_TEXTURED_OUTPUT VSSpriteTextured(VS_SPRITE_TEXTURED_INPUT input)
 	VS_SPRITE_TEXTURED_OUTPUT output;
 
 	output.position = mul(mul(mul(float4(input.position, 1.0f), gmtxTexturedObject), gmtxView), gmtxProjection);
-	//output.uv.x = input.uv.x + (gmtxTextureTransform / 1);
 	output.uv.x = input.uv.x + 0.125f * index;
 	output.uv.y = input.uv.y;
 
@@ -337,18 +352,23 @@ float4 PSSpriteTextured(VS_SPRITE_TEXTURED_OUTPUT input) : SV_TARGET
 	return(cColor);
 }
 
-
 VS_TEXTURED_OUTPUT VSUITextured(VS_TEXTURED_INPUT input)
 {
 	VS_TEXTURED_OUTPUT output;
 
-	//output.position = mul(mul(float4(input.position, 1.0f), gmtxTexturedObject), gmtxView);
 	output.position = mul(mul(float4(input.position, 1.0f), gmtxTexturedObject), gmtxProjection);
-	// output.position = mul(mul(float4(input.position, 1.0f), gmtxView), gmtxProjection);
-	// output.position = mul(mul(mul(float4(input.position, 1.0f), gmtxTexturedObject), gmtxView), gmtxProjection);
 	output.uv.x = input.uv.x + gTrans.gfCharacterHP;
-	//output.uv.x = gfCharacterHP;gmtxTextureTransform
 	output.uv.y = input.uv.y;
+
+	return(output);
+}
+
+VS_TEXTURED_OUTPUT VSUITextured2(VS_TEXTURED_INPUT input)
+{
+	VS_TEXTURED_OUTPUT output;
+
+	output.position = mul(mul(float4(input.position, 1.0f), gmtxTexturedObject), gmtxProjection);
+	output.uv = input.uv;
 
 	return(output);
 }

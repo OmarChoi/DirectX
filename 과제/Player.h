@@ -36,7 +36,7 @@ protected:
 	CShader						*m_pShader = NULL;
 
 	XMFLOAT3					m_xmf3AABBCenter = XMFLOAT3(0.f, 0.f, 0.f);
-	XMFLOAT3					m_xmf3AABBExtents = XMFLOAT3(4.0f, 4.0f, 9.0f);
+	XMFLOAT3					m_xmf3AABBExtents = XMFLOAT3(4.0f, 4.0f, 15.0f);
 	BoundingOrientedBox			m_xmBoundingBox = BoundingOrientedBox(m_xmf3AABBCenter, m_xmf3AABBExtents, XMFLOAT4(0.f, 0.f, 0.f, 1.f));
 public:
 	CPlayer();

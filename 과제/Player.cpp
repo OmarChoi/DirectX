@@ -232,6 +232,7 @@ void CPlayer::OnPrepareRender()
 void CPlayer::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera)
 {
 	DWORD nCameraMode = (pCamera) ? pCamera->GetMode() : 0x00;
+
 	if (nCameraMode == THIRD_PERSON_CAMERA)
 	{
 		if (m_pShader) m_pShader->Render(pd3dCommandList, pCamera, 0);
@@ -247,7 +248,7 @@ CAirplanePlayer::CAirplanePlayer(ID3D12Device *pd3dDevice, ID3D12GraphicsCommand
 	m_pCamera = ChangeCamera(/*SPACESHIP_CAMERA*/THIRD_PERSON_CAMERA, 0.0f);
 
 	m_pShader = new CPlayerShader();
-	m_pShader->CreateShader(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
+	m_pShader->CreateShader(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature, 0);
 	m_pShader->CreateCbvSrvDescriptorHeaps(pd3dDevice, 0, 1); //Mi24(1)
 
 	CGameObject *pGameObject = CGameObject::LoadGeometryFromFile(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature, "Model/Mi24.bin", m_pShader);
@@ -296,17 +297,24 @@ CCamera *CAirplanePlayer::ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed)
 	switch (nNewCameraMode)
 	{
 		case FIRST_PERSON_CAMERA:
+		{
+			CPlayer* pPlayer = m_pCamera->GetPlayer();
 			SetFriction(2.0f);
 			SetGravity(XMFLOAT3(0.0f, 0.0f, 0.0f));
 			SetMaxVelocityXZ(2.5f);
 			SetMaxVelocityY(40.0f);
 			m_pCamera = OnChangeCamera(FIRST_PERSON_CAMERA, nCurrentCameraMode);
 			m_pCamera->SetTimeLag(0.0f);
-			m_pCamera->SetOffset(XMFLOAT3(0.0f, 20.0f, 0.0f));
-			m_pCamera->GenerateProjectionMatrix(1.01f, 5000.0f, ASPECT_RATIO, 60.0f);
+			m_pCamera->SetOffset(XMFLOAT3(0.0f, 0.0f, 0.0f));
+			m_pCamera->SetLookAt(pPlayer->GetLook());
+			//m_pCamera->SetPosition(XMFLOAT3(pPlayer->GetPosition().x, pPlayer->GetPosition().y - 1.5f, pPlayer->GetPosition().z + 6.0f));
+			m_pCamera->SetPosition(Vector3::Add(pPlayer->GetPosition(), pPlayer->GetLook(), 6.0f));
+			m_pCamera->SetPosition(Vector3::Add(m_pCamera->GetPosition(), XMFLOAT3(0.f,1.f,0.f), -1.0f));
+			m_pCamera->GenerateProjectionMatrix(1.01f, 3000.0f, ASPECT_RATIO, 60.0f);
 			m_pCamera->SetViewport(0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT, 0.0f, 1.0f);
 			m_pCamera->SetScissorRect(0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT);
 			break;
+		}
 		case SPACESHIP_CAMERA:
 			SetFriction(100.5f);
 			SetGravity(XMFLOAT3(0.0f, 0.0f, 0.0f));

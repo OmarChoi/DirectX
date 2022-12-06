@@ -67,6 +67,9 @@ public:
     void AnimateObjects(float fTimeElapsed);
     void Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera=NULL);
 
+	void RenderParticle(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera);
+	void OnPostRenderParticle();
+
 	void ReleaseUploadBuffers();
 
 	CPlayer								*m_pPlayer = NULL;
@@ -104,4 +107,9 @@ public:
 
 	CMultiSpriteObjectsShader			*m_pSpriteShader = NULL;
 	UIShader							*m_pUIShader = NULL;
+
+	CockpitUIShader						*m_pCockpitUIShader = NULL;
+
+	CParticleObject						**m_ppParticleObjects = NULL;
+	int									m_nParticleObjects = 0;
 };

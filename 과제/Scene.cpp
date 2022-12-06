@@ -78,39 +78,48 @@ void CScene::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *p
 	m_pTerrain = new CHeightMapTerrain(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, _T("Image/HeightMap.raw"), 257, 257, 257, 257, xmf3Scale, xmf4Color);
 
 	//CObjectsShader *pObjectsShader = new CObjectsShader();
-	//pObjectsShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+	//pObjectsShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, 0);
 	//pObjectsShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, NULL);
 
 	//m_ppShaders[0] = pObjectsShader;
 
 	m_pUIShader = new UIShader();
-	m_pUIShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+	m_pUIShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, 0);
 	m_pUIShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, NULL);
 
+	m_pCockpitUIShader = new CockpitUIShader();
+	m_pCockpitUIShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, 0);
+	m_pCockpitUIShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, NULL);
+
 	m_pEnemyShader = new CEnemyShader();
-	m_pEnemyShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+	m_pEnemyShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, 0);
 	m_pEnemyShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, m_pTerrain);
 
 	m_pMissileShader = new CMissileShader();
-	m_pMissileShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+	m_pMissileShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, 0);
 	m_pMissileShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, m_pTerrain);
 
 	m_pSpriteShader = new CMultiSpriteObjectsShader();
-	m_pSpriteShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+	m_pSpriteShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, 0);
 	m_pSpriteShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
 
 	m_nShaders = 2;
 	m_ppShaders = new CShader * [m_nShaders];
 
 	CWaterShader* pWaterObjectShader = new CWaterShader();
-	pWaterObjectShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+	pWaterObjectShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, 0);
 	pWaterObjectShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, m_pTerrain);
 	m_ppShaders[0] = pWaterObjectShader;
 
 	CBillboardObjectsShader* pBillboardObjectShader = new CBillboardObjectsShader();
-	pBillboardObjectShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature);
+	pBillboardObjectShader->CreateShader(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, 0);
 	pBillboardObjectShader->BuildObjects(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, m_pTerrain);
 	m_ppShaders[1] = pBillboardObjectShader;
+
+	m_nParticleObjects = 1;
+	m_ppParticleObjects = new CParticleObject * [m_nParticleObjects];
+
+	m_ppParticleObjects[0] = new CParticleObject(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, XMFLOAT3(920.0f, 745.0f, 1300.0f), XMFLOAT3(0.0f, 65.0f, 0.0f), 0.0f, XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(8.0f, 8.0f), MAX_PARTICLES);
 
 
 	CreateShaderVariables(pd3dDevice, pd3dCommandList);
@@ -144,7 +153,7 @@ ID3D12RootSignature *CScene::CreateGraphicsRootSignature(ID3D12Device *pd3dDevic
 {
 	ID3D12RootSignature *pd3dGraphicsRootSignature = NULL;
 
-	D3D12_DESCRIPTOR_RANGE pd3dDescriptorRanges[14];
+	D3D12_DESCRIPTOR_RANGE pd3dDescriptorRanges[16];
 
 	pd3dDescriptorRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	pd3dDescriptorRanges[0].NumDescriptors = 1;
@@ -224,7 +233,26 @@ ID3D12RootSignature *CScene::CreateGraphicsRootSignature(ID3D12Device *pd3dDevic
 	pd3dDescriptorRanges[12].RegisterSpace = 0;
 	pd3dDescriptorRanges[12].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	D3D12_ROOT_PARAMETER pd3dRootParameters[17];
+	pd3dDescriptorRanges[13].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	pd3dDescriptorRanges[13].NumDescriptors = 1;
+	pd3dDescriptorRanges[13].BaseShaderRegister = 1;
+	pd3dDescriptorRanges[13].RegisterSpace = 0;
+	pd3dDescriptorRanges[13].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	pd3dDescriptorRanges[14].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	pd3dDescriptorRanges[14].NumDescriptors = 1;
+	pd3dDescriptorRanges[14].BaseShaderRegister = 2;
+	pd3dDescriptorRanges[14].RegisterSpace = 0;
+	pd3dDescriptorRanges[14].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	pd3dDescriptorRanges[15].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	pd3dDescriptorRanges[15].NumDescriptors = 1;
+	pd3dDescriptorRanges[15].BaseShaderRegister = 3;
+	pd3dDescriptorRanges[15].RegisterSpace = 0;
+	pd3dDescriptorRanges[15].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+
+	D3D12_ROOT_PARAMETER pd3dRootParameters[21];
 
 	pd3dRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	pd3dRootParameters[0].Descriptor.ShaderRegister = 1; //Camera
@@ -308,9 +336,29 @@ ID3D12RootSignature *CScene::CreateGraphicsRootSignature(ID3D12Device *pd3dDevic
 	pd3dRootParameters[15].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
 	pd3dRootParameters[16].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	pd3dRootParameters[16].Descriptor.ShaderRegister = 5;
+	pd3dRootParameters[16].Descriptor.ShaderRegister = 6;
 	pd3dRootParameters[16].Descriptor.RegisterSpace = 0;
 	pd3dRootParameters[16].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	pd3dRootParameters[17].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	pd3dRootParameters[17].DescriptorTable.NumDescriptorRanges = 1;
+	pd3dRootParameters[17].DescriptorTable.pDescriptorRanges = &pd3dDescriptorRanges[13];
+	pd3dRootParameters[17].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	pd3dRootParameters[18].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	pd3dRootParameters[18].DescriptorTable.NumDescriptorRanges = 1;
+	pd3dRootParameters[18].DescriptorTable.pDescriptorRanges = &pd3dDescriptorRanges[14];
+	pd3dRootParameters[18].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	pd3dRootParameters[19].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	pd3dRootParameters[19].DescriptorTable.NumDescriptorRanges = 1;
+	pd3dRootParameters[19].DescriptorTable.pDescriptorRanges = &pd3dDescriptorRanges[15];
+	pd3dRootParameters[19].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	pd3dRootParameters[20].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	pd3dRootParameters[20].Descriptor.ShaderRegister = 5;
+	pd3dRootParameters[20].Descriptor.RegisterSpace = 0;
+	pd3dRootParameters[20].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 	D3D12_STATIC_SAMPLER_DESC pd3dSamplerDescs[3];
 
@@ -354,7 +402,12 @@ ID3D12RootSignature *CScene::CreateGraphicsRootSignature(ID3D12Device *pd3dDevic
 	pd3dSamplerDescs[2].RegisterSpace = 0;
 	pd3dSamplerDescs[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-	D3D12_ROOT_SIGNATURE_FLAGS d3dRootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+	D3D12_ROOT_SIGNATURE_FLAGS d3dRootSignatureFlags = 
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | 
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT | 
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS | 
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS; 
+	
 	D3D12_ROOT_SIGNATURE_DESC d3dRootSignatureDesc;
 	::ZeroMemory(&d3dRootSignatureDesc, sizeof(D3D12_ROOT_SIGNATURE_DESC));
 	d3dRootSignatureDesc.NumParameters = _countof(pd3dRootParameters);
@@ -448,12 +501,17 @@ bool CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wPar
 			m_pSpriteShader->SetRenderingState(false);
 			m_pMissileShader->SetRenderingState(true);
 			break;
-		//case 'W': m_ppGameObjects[0]->MoveForward(+1.0f); break;
-		//case 'S': m_ppGameObjects[0]->MoveForward(-1.0f); break;
-		//case 'A': m_ppGameObjects[0]->MoveStrafe(-1.0f); break;
-		//case 'D': m_ppGameObjects[0]->MoveStrafe(+1.0f); break;
-		//case 'Q': m_ppGameObjects[0]->MoveUp(+1.0f); break;
-		//case 'R': m_ppGameObjects[0]->MoveUp(-1.0f); break;
+		case VK_CONTROL:
+			if (m_ppParticleObjects[0]->GetState())
+			{
+				m_ppParticleObjects[0]->SetState(false);
+			}
+			else
+			{
+				m_ppParticleObjects[0]->SetPosition(m_pPlayer->GetPosition());	//Position 설정함수 생성 필요
+				m_ppParticleObjects[0]->SetState(true);
+			}
+			break;
 		default:
 			break;
 		}
@@ -500,12 +558,11 @@ void CScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera
 	if (m_pd3dcbTexTrans)
 	{
 		D3D12_GPU_VIRTUAL_ADDRESS d3dcbLightsGpuVirtualAddress2 = m_pd3dcbTexTrans->GetGPUVirtualAddress();
-		pd3dCommandList->SetGraphicsRootConstantBufferView(16, d3dcbLightsGpuVirtualAddress2);
+		pd3dCommandList->SetGraphicsRootConstantBufferView(20, d3dcbLightsGpuVirtualAddress2);
 	}
 
 	if (m_pSkyBox) m_pSkyBox->Render(pd3dCommandList, pCamera);
 	if (m_pTerrain) m_pTerrain->Render(pd3dCommandList, pCamera);
-	if (m_pUIShader) m_pUIShader->Render(pd3dCommandList, pCamera, m_pPlayer);
 
 	for (int i = 0; i < m_nShaders ; i++)
 		if (m_ppShaders[i])
@@ -529,5 +586,17 @@ void CScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera
 	{
 		m_pSpriteShader->Render(pd3dCommandList, pCamera, m_pPlayer);
 	}
+
+	if (m_pCockpitUIShader) m_pCockpitUIShader->Render(pd3dCommandList, pCamera, m_pPlayer);
+	if (m_pUIShader) m_pUIShader->Render(pd3dCommandList, pCamera, m_pPlayer);
 }
 
+void CScene::RenderParticle(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
+{
+	for (int i = 0; i < m_nParticleObjects; i++) m_ppParticleObjects[i]->Render(pd3dCommandList, pCamera);
+}
+
+void CScene::OnPostRenderParticle()
+{
+	for (int i = 0; i < m_nParticleObjects; i++) m_ppParticleObjects[i]->OnPostRender();
+}

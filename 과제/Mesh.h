@@ -20,6 +20,31 @@
 #define VERTEXT_NORMAL_DETAIL			(VERTEXT_POSITION | VERTEXT_NORMAL | VERTEXT_TEXTURE_COORD0 | VERTEXT_TEXTURE_COORD1)
 #define VERTEXT_NORMAL_TANGENT__DETAIL	(VERTEXT_POSITION | VERTEXT_NORMAL | VERTEXT_TANGENT | VERTEXT_TEXTURE_COORD0 | VERTEXT_TEXTURE_COORD1)
 
+#define MAX_PARTICLES				300000
+
+class CVertex
+{
+public:
+	XMFLOAT3						m_xmf3Position;
+
+public:
+	CVertex() { m_xmf3Position = XMFLOAT3(0.0f, 0.0f, 0.0f); }
+	CVertex(XMFLOAT3 xmf3Position) { m_xmf3Position = xmf3Position; }
+	~CVertex() { }
+};
+
+class CParticleVertex : public CVertex
+{
+public:
+	XMFLOAT3						m_xmf3Velocity = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	float							m_fLifetime = 0.0f;
+	UINT							m_nType = 0;
+
+public:
+	CParticleVertex() { }
+	~CParticleVertex() { }
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 class CMesh
@@ -47,6 +72,20 @@ protected:
 	D3D12_PRIMITIVE_TOPOLOGY		m_d3dPrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	UINT							m_nSlot = 0;
 	UINT							m_nOffset = 0;
+	UINT							m_nStride = 0;
+
+	UINT							m_nIndices = 0;
+	UINT							m_nStartIndex = 0;
+	int								m_nBaseVertex = 0;
+
+	ID3D12Resource* m_pd3dVertexBuffer = NULL;
+	ID3D12Resource* m_pd3dVertexUploadBuffer = NULL;
+
+	ID3D12Resource* m_pd3dIndexBuffer = NULL;
+	ID3D12Resource* m_pd3dIndexUploadBuffer = NULL;
+
+	D3D12_VERTEX_BUFFER_VIEW		m_d3dVertexBufferView;
+	D3D12_INDEX_BUFFER_VIEW			m_d3dIndexBufferView;
 
 protected:
 	int								m_nVertices = 0;
@@ -67,10 +106,12 @@ protected:
 
 public:
 	UINT GetType() { return(m_nType); }
-
+	virtual void PreRender(ID3D12GraphicsCommandList* pd3dCommandList, int nPipelineState) { }
 	virtual void ReleaseUploadBuffers();
 	virtual void Render(ID3D12GraphicsCommandList *pd3dCommandList, int nSubSet);
-
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList);
+	virtual void OnPostRender(int nPipelineState) { }
+	virtual void PostRender(ID3D12GraphicsCommandList* pd3dCommandList, int nPipelineState) { }
 	BoundingOrientedBox GetBoundingBox() { return(m_xmBoundingBox); }
 };
 
@@ -220,4 +261,54 @@ public:
 
 	virtual float OnGetHeight(int x, int z, void* pContext);
 	virtual XMFLOAT4 OnGetColor(int x, int z, void* pContext);
+};
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+#define PARTICLE_TYPE_EMITTER		0
+#define PARTICLE_TYPE_SHELL			1
+#define PARTICLE_TYPE_FLARE01		2
+#define PARTICLE_TYPE_FLARE02		3
+#define PARTICLE_TYPE_FLARE03		4
+
+#define MAX_PARTICLES				300000
+
+//#define _WITH_QUERY_DATA_SO_STATISTICS
+
+class CParticleMesh : public CMesh
+{
+public:
+	CParticleMesh(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, XMFLOAT3 xmf3Position, XMFLOAT3 xmf3Velocity, float fLifetime, XMFLOAT3 xmf3Acceleration, XMFLOAT3 xmf3Color, XMFLOAT2 xmf2Size, UINT nMaxParticles);
+	virtual ~CParticleMesh();
+
+	bool								m_bStart = true;
+
+	UINT								m_nMaxParticles = MAX_PARTICLES;
+
+	ID3D12Resource* m_pd3dStreamOutputBuffer = NULL;
+	ID3D12Resource* m_pd3dDrawBuffer = NULL;
+
+	ID3D12Resource* m_pd3dDefaultBufferFilledSize = NULL;
+	ID3D12Resource* m_pd3dUploadBufferFilledSize = NULL;
+	UINT64* m_pnUploadBufferFilledSize = NULL;
+#ifdef _WITH_QUERY_DATA_SO_STATISTICS
+	ID3D12QueryHeap* m_pd3dSOQueryHeap = NULL;
+	ID3D12Resource* m_pd3dSOQueryBuffer = NULL;
+	D3D12_QUERY_DATA_SO_STATISTICS* m_pd3dSOQueryDataStatistics = NULL;
+#else
+	ID3D12Resource* m_pd3dReadBackBufferFilledSize = NULL;
+#endif
+
+	D3D12_STREAM_OUTPUT_BUFFER_VIEW		m_d3dStreamOutputBufferView;
+
+	virtual void CreateVertexBuffer(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, XMFLOAT3 xmf3Position, XMFLOAT3 xmf3Velocity, float fLifetime, XMFLOAT3 xmf3Acceleration, XMFLOAT3 xmf3Color, XMFLOAT2 xmf2Size);
+	virtual void CreateStreamOutputBuffer(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, UINT nMaxParticles);
+
+	virtual void PreRender(ID3D12GraphicsCommandList* pd3dCommandList, int nPipelineState);
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, int nPipelineState);
+	virtual void PostRender(ID3D12GraphicsCommandList* pd3dCommandList, int nPipelineState);
+
+	virtual void OnPostRender(int nPipelineState);
 };

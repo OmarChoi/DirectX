@@ -20,11 +20,13 @@ class CStandardShader;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-#define RESOURCE_TEXTURE2D			0x01
-#define RESOURCE_TEXTURE2D_ARRAY	0x02	//[]
-#define RESOURCE_TEXTURE2DARRAY		0x03
-#define RESOURCE_TEXTURE_CUBE		0x04
-#define RESOURCE_BUFFER				0x05
+#define RESOURCE_TEXTURE1D			0x01
+#define RESOURCE_TEXTURE2D			0x02
+#define RESOURCE_TEXTURE2D_ARRAY	0x03	//[]
+#define RESOURCE_TEXTURE2DARRAY		0x04
+#define RESOURCE_TEXTURE_CUBE		0x05
+#define RESOURCE_BUFFER				0x06
+#define RESOURCE_STRUCTURED_BUFFER	0x07
 
 class CGameObject;
 
@@ -67,6 +69,7 @@ private:
 
 	DXGI_FORMAT*					m_pdxgiBufferFormats = NULL;
 	int*							m_pnBufferElements = NULL;
+	int								*m_pnBufferStrides = NULL;
 
 	int								m_nRootParameters = 0;
 	int*							m_pnRootParameterIndices = NULL;
@@ -89,7 +92,10 @@ public:
 	void LoadBuffer(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, void* pData, UINT nElements, UINT nStride, DXGI_FORMAT ndxgiFormat, UINT nIndex);
 	ID3D12Resource* CreateTexture(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, UINT nIndex, UINT nResourceType, UINT nWidth, UINT nHeight, UINT nElements, UINT nMipLevels, DXGI_FORMAT dxgiFormat, D3D12_RESOURCE_FLAGS d3dResourceFlags, D3D12_RESOURCE_STATES d3dResourceStates, D3D12_CLEAR_VALUE* pd3dClearValue);
 
-	int LoadTextureFromFile(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, CGameObject* pParent, FILE* pInFile, CShader* pShader, UINT nIndex);
+	void CreateBuffer(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, void* pData, UINT nElements, UINT nStride, DXGI_FORMAT dxgiFormat, D3D12_HEAP_TYPE d3dHeapType, D3D12_RESOURCE_STATES d3dResourceStates, UINT nIndex);
+	void CreateTexture(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, void* pData, UINT nBytes, UINT nResourceType, UINT nWidth, UINT nHeight, UINT nDepthOrArraySize, UINT nMipLevels, D3D12_RESOURCE_FLAGS d3dResourceFlags, DXGI_FORMAT dxgiFormat, UINT nIndex);
+
+	int LoadTextureFromDDSFile(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, CGameObject* pParent, FILE* pInFile, CShader* pShader, UINT nIndex);
 
 	void SetRootParameterIndex(int nIndex, UINT nRootParameterIndex);
 	void SetGpuDescriptorHandle(int nIndex, D3D12_GPU_DESCRIPTOR_HANDLE d3dSrvGpuDescriptorHandle);
@@ -179,7 +185,7 @@ class CGameObject
 {
 protected:
 	XMFLOAT3						m_xmf3AABBCenter = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	XMFLOAT3						m_xmf3AABBExtents = XMFLOAT3(2.0f, 2.0f, 5.0f);
+	XMFLOAT3						m_xmf3AABBExtents = XMFLOAT3(2.0f, 2.0f, 15.0f);
 	BoundingOrientedBox				m_xmBoundingBox = BoundingOrientedBox(m_xmf3AABBCenter, m_xmf3AABBExtents, XMFLOAT4(GetLook().x, GetLook().y, GetLook().z, 1.f));
 
 private:
@@ -431,4 +437,23 @@ public:
 	CUIObject();
 	virtual ~CUIObject();
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera);
+};
+
+class CParticleObject : public CGameObject
+{
+	bool m_renderState = false;
+public:
+	bool GetState() { return m_renderState; }
+	void SetState(bool in) { m_renderState = in; }
+
+	CParticleObject(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature, XMFLOAT3 xmf3Position, XMFLOAT3 xmf3Velocity, float fLifetime, XMFLOAT3 xmf3Acceleration, XMFLOAT3 xmf3Color, XMFLOAT2 xmf2Size, UINT nMaxParticles);
+	virtual ~CParticleObject();
+
+	CTexture* m_pRandowmValueTexture = NULL;
+	CTexture* m_pRandowmValueOnSphereTexture = NULL;
+
+	void ReleaseUploadBuffers();
+
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera);
+	virtual void OnPostRender();
 };
