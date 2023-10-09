@@ -17,6 +17,7 @@
 class CPlayer;
 class CShader;
 class CStandardShader;
+class CScene;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -46,6 +47,12 @@ struct CB_GAMEOBJECT_INFO
 	XMFLOAT4X4						m_xmf4x4Texture;
 	XMINT2							m_xmi2TextureTiling;
 	XMFLOAT2						m_xmf2TextureOffset;
+};
+
+struct CB_GAMEOBJECT_INFO2
+{
+	XMFLOAT4X4						m_xmf4x4World;
+	UINT							m_nMaterial;
 };
 
 class CTexture
@@ -94,7 +101,7 @@ public:
 
 	void CreateBuffer(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, void* pData, UINT nElements, UINT nStride, DXGI_FORMAT dxgiFormat, D3D12_HEAP_TYPE d3dHeapType, D3D12_RESOURCE_STATES d3dResourceStates, UINT nIndex);
 	void CreateTexture(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, void* pData, UINT nBytes, UINT nResourceType, UINT nWidth, UINT nHeight, UINT nDepthOrArraySize, UINT nMipLevels, D3D12_RESOURCE_FLAGS d3dResourceFlags, DXGI_FORMAT dxgiFormat, UINT nIndex);
-
+	ID3D12Resource* CreateTexture(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, UINT nWidth, UINT nHeight, UINT nElements, UINT nMipLevels, DXGI_FORMAT dxgiFormat, D3D12_RESOURCE_FLAGS d3dResourceFlags, D3D12_RESOURCE_STATES d3dResourceStates, D3D12_CLEAR_VALUE* pd3dClearValue, UINT nResourceType, UINT nIndex);
 	int LoadTextureFromDDSFile(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, CGameObject* pParent, FILE* pInFile, CShader* pShader, UINT nIndex);
 
 	void SetRootParameterIndex(int nIndex, UINT nRootParameterIndex);
@@ -144,7 +151,6 @@ public:
 
 private:
 	int								m_nReferences = 0;
-
 public:
 	void AddRef() { m_nReferences++; }
 	void Release() { if (--m_nReferences <= 0) delete this; }
@@ -152,6 +158,8 @@ public:
 public:
 	CShader							*m_pShader = NULL;
 	CTexture*						m_pTexture = NULL;
+	UINT							m_nReflection = 0;
+	MATERIAL*						m_pReflection = NULL;
 
 	XMFLOAT4						m_xmf4AlbedoColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	XMFLOAT4						m_xmf4EmissiveColor = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -238,6 +246,7 @@ public:
 	virtual void Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent=NULL);
 
 	virtual void OnPrepareRender() { }
+	virtual void OnPreRender(ID3D12GraphicsCommandList* pd3dCommandList, CScene* pScene) { }
 	virtual void Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera=NULL);
 
 	virtual void CreateShaderVariables(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList);
@@ -456,4 +465,22 @@ public:
 
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera);
 	virtual void OnPostRender();
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+class CDynamicCubeMappingObject : public CGameObject
+{
+public:
+	CDynamicCubeMappingObject(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, LONG nCubeMapSize, D3D12_CPU_DESCRIPTOR_HANDLE d3dDsvCPUDescriptorHandle, D3D12_CPU_DESCRIPTOR_HANDLE d3dRtvCPUDescriptorHandle, CShader* pShader);
+	virtual ~CDynamicCubeMappingObject();
+
+	virtual void OnPreRender(ID3D12GraphicsCommandList* pd3dCommandList, CScene* pScene);
+	void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera);
+	CCamera* m_ppCameras[6];
+
+	D3D12_CPU_DESCRIPTOR_HANDLE		m_pd3dRtvCPUDescriptorHandles[6];
+
+	ID3D12Resource* m_pd3dDepthStencilBuffer = NULL;
+	D3D12_CPU_DESCRIPTOR_HANDLE		m_d3dDsvCPUDescriptorHandle;
 };

@@ -1,36 +1,15 @@
 #include "Shaders.hlsl"
 
-struct GSOutput
-{
-	float4 pos : SV_POSITION;
-};
-
-[maxvertexcount(3)]
-void main(
-	triangle float4 input[3] : SV_POSITION,
-	inout TriangleStream< GSOutput > output
-)
-{
-	for (uint i = 0; i < 3; i++)
-	{
-		GSOutput element;
-		element.pos = input[i];
-		output.Append(element);
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
 #define PARTICLE_TYPE_EMITTER		0
 #define PARTICLE_TYPE_SHELL			1
 #define PARTICLE_TYPE_FLARE01		2
 #define PARTICLE_TYPE_FLARE02		3
 #define PARTICLE_TYPE_FLARE03		4
 
-#define SHELL_PARTICLE_LIFETIME		3.0f
-#define FLARE01_PARTICLE_LIFETIME	2.5f
-#define FLARE02_PARTICLE_LIFETIME	1.5f
-#define FLARE03_PARTICLE_LIFETIME	2.0f
+#define SHELL_PARTICLE_LIFETIME		1.0f
+#define FLARE01_PARTICLE_LIFETIME	5.0f
+#define FLARE02_PARTICLE_LIFETIME	3.0f
+#define FLARE03_PARTICLE_LIFETIME	0.25f
 
 struct VS_PARTICLE_INPUT
 {
@@ -106,7 +85,7 @@ float4 RandomDirectionOnSphere(float fOffset)
 
 void OutputParticleToStream(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT> output)
 {
-	input.position += input.velocity * gfElapsedTime;
+	input.position -= input.velocity * gfElapsedTime;
 	input.velocity += gf3Gravity * gfElapsedTime;
 	input.lifetime -= gfElapsedTime;
 
@@ -119,7 +98,6 @@ void EmmitParticles(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT
 	if (input.lifetime <= 0.0f)
 	{
 		VS_PARTICLE_INPUT particle = input;
-
 		particle.type = PARTICLE_TYPE_SHELL;
 		particle.position = input.position + (input.velocity * gfElapsedTime * f4Random.xyz);
 		particle.velocity = input.velocity + (f4Random.xyz * 16.0f);
@@ -144,23 +122,29 @@ void ShellParticles(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT
 		VS_PARTICLE_INPUT particle = input;
 		float4 f4Random = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
-		particle.type = PARTICLE_TYPE_FLARE01;
-		particle.position = input.position + (input.velocity * gfElapsedTime * 2.0f);
-		particle.lifetime = FLARE01_PARTICLE_LIFETIME;
+		particle.type = PARTICLE_TYPE_FLARE02;
+		particle.position.x = input.position.x + (input.velocity * gfElapsedTime * 2.0f);
+		particle.position.y = input.position.y - (input.velocity * gfElapsedTime * 2.0f);
+		particle.position.z = input.position.z + (input.velocity * gfElapsedTime * 2.0f);
+		particle.lifetime = FLARE02_PARTICLE_LIFETIME;
 
 		for (int i = 0; i < gnFlareParticlesToEmit; i++)
 		{
 			f4Random = RandomDirection(input.type + i);
+			f4Random.y = 0;
 			particle.velocity = input.velocity + (f4Random.xyz * 18.0f);
 
 			output.Append(particle);
 		}
 
 		particle.type = PARTICLE_TYPE_FLARE02;
-		particle.position = input.position + (input.velocity * gfElapsedTime);
+		particle.position.x = input.position.x + (input.velocity * gfElapsedTime * 2.0f);
+		particle.position.y = input.position.y;
+		particle.position.z = input.position.z + (input.velocity * gfElapsedTime * 2.0f);
 		for (int j = 0; j < abs(f4Random.x) * gnMaxFlareType2Particles; j++)
 		{
 			f4Random = RandomDirection(input.type + j);
+			f4Random.y = 0;
 			particle.velocity = input.velocity + (f4Random.xyz * 10.0f);
 			particle.lifetime = FLARE02_PARTICLE_LIFETIME + (f4Random.x * 0.4f);
 
@@ -183,17 +167,18 @@ void OutputEmberParticles(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE
 
 void GenerateEmberParticles(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT> output)
 {
+	float4 f4Random = RandomDirection(input.type);
 	if (input.lifetime <= 0.0f)
 	{
 		VS_PARTICLE_INPUT particle = input;
 
 		particle.type = PARTICLE_TYPE_FLARE03;
-		particle.position = input.position + (input.velocity * gfElapsedTime);
+		particle.position = input.position - (input.velocity * gfElapsedTime);
 		particle.lifetime = FLARE03_PARTICLE_LIFETIME;
-		for (int i = 0; i < 64; i++)
+		for (int i = 0; i < 16; i++)
 		{
 			float4 f4Random = RandomDirectionOnSphere(input.type + i);
-			particle.velocity = input.velocity + (f4Random.xyz * 25.0f);
+			particle.velocity = input.velocity + (f4Random.xyz);
 
 			output.Append(particle);
 		}
@@ -213,10 +198,10 @@ void GSParticleStreamOutput(point VS_PARTICLE_INPUT input[1], inout PointStream<
 		EmmitParticles(particle, output);
 	else if (particle.type == PARTICLE_TYPE_SHELL) 
 		ShellParticles(particle, output);
-	else if ((particle.type == PARTICLE_TYPE_FLARE01) || (particle.type == PARTICLE_TYPE_FLARE03)) 
-		OutputEmberParticles(particle, output);
-	else if (particle.type == PARTICLE_TYPE_FLARE02) 
+	else if (particle.type == PARTICLE_TYPE_FLARE02)
 		GenerateEmberParticles(particle, output);
+	else if  (particle.type == PARTICLE_TYPE_FLARE03)
+		OutputEmberParticles(particle, output);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -247,24 +232,27 @@ VS_PARTICLE_DRAW_OUTPUT VSParticleDraw(VS_PARTICLE_INPUT input)
 
 	if (input.type == PARTICLE_TYPE_EMITTER) 
 	{ 
-		output.color = float4(1.0f, 0.1f, 0.1f, 1.0f); 
+		output.color = float4(1.0f, 1.0f, 1.0f, 1.0f);
 		output.size = 3.0f; 
 	}
 	else if (input.type == PARTICLE_TYPE_SHELL) 
 	{ 
-		output.color = float4(0.1f, 0.0f, 1.0f, 1.0f); 
+		output.color = float4(1.0f, 1.0f, 1.0f, 1.0f);
 		output.size = 3.0f; 
 	}
-	else if (input.type == PARTICLE_TYPE_FLARE01) 
-	{ 
-		output.color = float4(1.0f, 1.0f, 0.1f, 1.0f); 
-		output.color *= (input.lifetime / FLARE01_PARTICLE_LIFETIME); 
+	//else if (input.type == PARTICLE_TYPE_FLARE01) 
+	//{ 
+	//	output.color = float4(1.0f, 1.0f, 1.0f, 1.0f);
+	//	//output.color *= (input.lifetime / FLARE01_PARTICLE_LIFETIME); 
+	//}
+	else if (input.type == PARTICLE_TYPE_FLARE02)
+	{
+		output.color = float4(1.0f, 1.0f, 1.0f, 1.0f);
+		output.color *= (input.lifetime / FLARE02_PARTICLE_LIFETIME);
 	}
-	else if (input.type == PARTICLE_TYPE_FLARE02) 
-		output.color = float4(1.0f, 0.1f, 1.0f, 1.0f);
 	else if (input.type == PARTICLE_TYPE_FLARE03) 
 	{ 
-		output.color = float4(1.0f, 0.1f, 1.0f, 1.0f); 
+		output.color = float4(1.0f, 1.0f, 1.0f, 1.0f);
 		output.color *= (input.lifetime / FLARE03_PARTICLE_LIFETIME); 
 	}
 

@@ -8,6 +8,8 @@
 #include "Camera.h"
 #include "Player.h"
 
+class COutlineShader;
+
 class CShader
 {
 public:
@@ -42,7 +44,7 @@ public:
 
 	virtual D3D12_INPUT_LAYOUT_DESC CreateInputLayout();
 	virtual D3D12_RASTERIZER_DESC CreateRasterizerState();
-	virtual D3D12_BLEND_DESC CreateBlendState();
+	virtual D3D12_BLEND_DESC CreateBlendState(int nPipelineState);
 	virtual D3D12_DEPTH_STENCIL_DESC CreateDepthStencilState();
 
 	virtual D3D12_SHADER_BYTECODE CreateVertexShader(int nPipelineState);
@@ -177,7 +179,7 @@ public:
 	virtual ~CEnemyShader();
 
 	virtual void BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature, void* pContext = NULL);
-	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, CPlayer *pPlayer = NULL, int nPipelineState = 0);
+	void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, COutlineShader *pOutLine = NULL, int nPipelineState = 0);
 	void SetRandomPosition(CPlayer* Player, int j);
 	void CheckCollision(CObjectsShader *pMShader, CPlayer* pPlayer, CMultiSpriteObjectsShader* pEffect);
 };
@@ -207,7 +209,7 @@ public:
 	virtual ~CBillboardObjectsShader();
 
 	D3D12_RASTERIZER_DESC CreateRasterizerState();
-	D3D12_BLEND_DESC CreateBlendState();
+	D3D12_BLEND_DESC CreateBlendState(int nPipelineState);
 	D3D12_INPUT_LAYOUT_DESC CreateInputLayout();
 	D3D12_SHADER_BYTECODE CreateVertexShader(int nPipelineState);
 	D3D12_SHADER_BYTECODE CreatePixelShader(int nPipelineState);
@@ -230,7 +232,7 @@ public:
 	virtual ~CWaterShader();
 
 	//D3D12_RASTERIZER_DESC CreateRasterizerState();
-	D3D12_BLEND_DESC CreateBlendState();
+	D3D12_BLEND_DESC CreateBlendState(int nPipelineState);
 	//D3D12_INPUT_LAYOUT_DESC CreateInputLayout();
 	D3D12_SHADER_BYTECODE CreateVertexShader(int nPipelineState);
 	D3D12_SHADER_BYTECODE CreatePixelShader(int nPipelineState);
@@ -266,7 +268,7 @@ public:
 	virtual ~CMultiSpriteObjectsShader();
 
 	//virtual D3D12_RASTERIZER_DESC CreateRasterizerState();
-	//virtual D3D12_BLEND_DESC CreateBlendState();
+	//virtual D3D12_BLEND_DESC CreateBlendState(int nPipelineState);
 
 	virtual D3D12_SHADER_BYTECODE CreateVertexShader(int nPipelineState);
 	virtual D3D12_SHADER_BYTECODE CreatePixelShader(int nPipelineState);
@@ -326,4 +328,62 @@ public:
 
 	virtual void CreateShader(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature, int nPipelineState);
 	void CreateGraphicsPipeline(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature, int nPipelineState);
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+class CDynamicCubeMappingShader : public CObjectsShader
+{
+public:
+	CDynamicCubeMappingShader(UINT nCubeMapSize = 256);
+	virtual ~CDynamicCubeMappingShader();
+
+	virtual D3D12_INPUT_LAYOUT_DESC CreateInputLayout();
+	virtual D3D12_SHADER_BYTECODE CreateVertexShader(int nPipelineState);
+	virtual D3D12_SHADER_BYTECODE CreatePixelShader(int nPipelineState);
+
+	virtual void BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, void *pContext = NULL);
+	virtual void ReleaseObjects();
+
+	virtual void ReleaseUploadBuffers();
+
+	virtual void Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera);
+	virtual void OnPreRender(ID3D12Device* pd3dDevice, ID3D12CommandQueue* pd3dCommandQueue, ID3D12Fence* pd3dFence, HANDLE hFenceEvent, CScene* pScene);
+
+	virtual void CreateShader(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature);
+protected:
+	ULONG							m_nCubeMapSize = 256;
+
+	ID3D12CommandAllocator*			m_pd3dCommandAllocator = NULL;
+	ID3D12GraphicsCommandList*		m_pd3dCommandList = NULL;
+
+	ID3D12DescriptorHeap*			m_pd3dRtvDescriptorHeap = NULL;
+	ID3D12DescriptorHeap*			m_pd3dDsvDescriptorHeap = NULL;
+};
+
+class COutlineShader : public CShader
+{
+public:
+	COutlineShader();
+	virtual ~COutlineShader();
+
+	virtual D3D12_INPUT_LAYOUT_DESC CreateInputLayout();
+	virtual D3D12_SHADER_BYTECODE CreateVertexShader();
+	virtual D3D12_SHADER_BYTECODE CreatePixelShader();
+
+	virtual void CreateShader(ID3D12Device* pd3dDevice, ID3D12RootSignature* pd3dGraphicsRootSignature, UINT nPipelineState = 0);
+
+	virtual void CreateShaderVariables(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList);
+	virtual void ReleaseShaderVariables();
+
+
+	void UpdateShaderVariable(ID3D12GraphicsCommandList* pd3dCommandList, CGameObject* pGameObject);
+
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, UINT nPipelineState = 0);
+
+	CObjectsShader* pObjectsShader = NULL;
+protected:
+	ID3D12Resource* m_pd3dcbGameObject = NULL;
+	CB_GAMEOBJECT_INFO* m_pcbMappedGameObject = NULL;
+
 };

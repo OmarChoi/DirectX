@@ -7,12 +7,6 @@
 #include "Shader.h"
 #include "Player.h"
 
-#define MAX_LIGHTS			16 
-
-#define POINT_LIGHT			1
-#define SPOT_LIGHT			2
-#define DIRECTIONAL_LIGHT	3
-
 struct LIGHT
 {
 	XMFLOAT4				m_xmf4Ambient;
@@ -35,6 +29,11 @@ struct LIGHTS
 	LIGHT					m_pLights[MAX_LIGHTS];
 	XMFLOAT4				m_xmf4GlobalAmbient;
 	int						m_nLights;
+};
+
+struct MATERIALS
+{
+	MATERIAL				m_pReflections[MAX_MATERIALS];
 };
 
 struct TextureTransform
@@ -65,8 +64,11 @@ public:
 
 	bool ProcessInput(UCHAR *pKeysBuffer);
     void AnimateObjects(float fTimeElapsed);
-    void Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera=NULL);
 
+	void OnPrepareRender(ID3D12GraphicsCommandList* pd3dCommandList);
+	void OnPreRender(ID3D12Device* pd3dDevice, ID3D12CommandQueue* pd3dCommandQueue, ID3D12Fence* pd3dFence, HANDLE hFenceEvent);
+	void Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera=NULL);
+	
 	void RenderParticle(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera);
 	void OnPostRenderParticle();
 
@@ -75,7 +77,7 @@ public:
 	CPlayer								*m_pPlayer = NULL;
 
 	float								m_fTimeElapsed;
-
+	bool								m_playParticle = false;
 public:
 	ID3D12RootSignature					*m_pd3dGraphicsRootSignature = NULL;
 
@@ -88,6 +90,9 @@ public:
 	CSkyBox								*m_pSkyBox = NULL;
 	CHeightMapTerrain					*m_pTerrain = NULL;
 	CEnemyShader						*m_pEnemyShader = NULL;
+
+	CDynamicCubeMappingShader			**m_ppEnvironmentMappingShaders = NULL;
+	int									m_nEnvironmentMappingShaders = 0;
 
 	LIGHT								*m_pLights = NULL;
 	int									m_nLights = 0;
@@ -112,4 +117,11 @@ public:
 
 	CParticleObject						**m_ppParticleObjects = NULL;
 	int									m_nParticleObjects = 0;
+
+	COutlineShader* m_pOutlineShader = NULL;
+
+	MATERIALS* m_pMaterials = NULL;
+
+	ID3D12Resource* m_pd3dcbMaterials = NULL;
+	MATERIAL* m_pcbMappedMaterials = NULL;
 };

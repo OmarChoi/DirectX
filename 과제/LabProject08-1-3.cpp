@@ -20,7 +20,7 @@ INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
-#pragma comment(linker, "/entry:wWinMainCRTStartup /subsystem:console") 
+//#pragma comment(linker, "/entry:wWinMainCRTStartup /subsystem:console") 
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 

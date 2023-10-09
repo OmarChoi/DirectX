@@ -47,6 +47,12 @@ cbuffer cbFrameworkInfo : register(b6)
 	int			gnMaxFlareType2Particles : packoffset(c1.w);;
 };
 
+cbuffer cbGameObjectInfo2 : register(b7)
+{
+	matrix		gmtxWorld : packoffset(c0);
+	uint		gnMaterialID : packoffset(c8);
+
+};
 #include "Light.hlsl"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -68,6 +74,7 @@ Texture2D<float4> gtxtParticleTexture : register(t1);
 //Texture1D<float4> gtxtRandom : register(t2);
 Buffer<float4> gRandomBuffer : register(t2);
 Buffer<float4> gRandomSphereBuffer : register(t3);
+TextureCube gtxtCubeMap : register(t4);
 Texture2D gtxtAlbedoTexture : register(t6);
 Texture2D gtxtSpecularTexture : register(t7);
 Texture2D gtxtNormalTexture : register(t8);
@@ -309,7 +316,6 @@ float4 PSWaterTextured(VS_TEXTURED_OUTPUT input) : SV_TARGET
 	return(cColor);
 }
 
-Texture2D gtxtMissileTexture : register(t19);
 
 float4 PSMissileTextured(VS_TEXTURED_OUTPUT input) : SV_TARGET
 {
@@ -357,8 +363,9 @@ VS_TEXTURED_OUTPUT VSUITextured(VS_TEXTURED_INPUT input)
 	VS_TEXTURED_OUTPUT output;
 
 	output.position = mul(mul(float4(input.position, 1.0f), gmtxTexturedObject), gmtxProjection);
-	output.uv.x = input.uv.x + gTrans.gfCharacterHP;
-	output.uv.y = input.uv.y;
+	//output.uv.x = input.uv.x + gTrans.gfCharacterHP;
+	//output.uv.y = input.uv.y;
+	output.uv = input.uv;
 
 	return(output);
 }
@@ -375,7 +382,149 @@ VS_TEXTURED_OUTPUT VSUITextured2(VS_TEXTURED_INPUT input)
 
 float4 PSUITextured(VS_TEXTURED_OUTPUT input) : SV_TARGET
 {
-	float4 cColor = gtxtBillboardTexture.Sample(gssBorder, input.uv);
+	float4 cColor = gtxtBillboardTexture.Sample(gssWrap, input.uv);
 
 	return(cColor);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+struct VS_LIGHTING_INPUT
+{
+	float3	position    : POSITION;
+	float3	normal		: NORMAL;
+};
+
+struct VS_LIGHTING_OUTPUT
+{
+	float4	position    : SV_POSITION;
+	float3	positionW   : POSITION;
+	float3	normalW		: NORMAL;
+};
+
+VS_LIGHTING_OUTPUT VSCubeMapping(VS_LIGHTING_INPUT input)
+{
+	VS_LIGHTING_OUTPUT output;
+
+	output.positionW = mul(float4(input.position, 1.0f), gmtxTexturedObject).xyz;
+	//	output.positionW = (float3)mul(float4(input.position, 1.0f), gmtxWorld);
+	output.normalW = mul(float4(input.normal, 0.0f), gmtxTexturedObject).xyz;
+	//gmtxGameObject gmtxTexturedObject
+	//	output.normalW = mul(input.normal, (float3x3)gmtxWorld);
+	output.position = mul(mul(float4(output.positionW, 1.0f), gmtxView), gmtxProjection);
+
+	return(output);
+}
+
+float4 PSCubeMapping(VS_LIGHTING_OUTPUT input) : SV_Target
+{
+	input.normalW = normalize(input.normalW);
+
+	float4 cIllumination = Lighting(input.positionW, input.normalW);
+
+	float3 vFromCamera = normalize(input.positionW - gvCameraPosition.xyz);
+	float3 vReflected = normalize(reflect(vFromCamera, input.normalW));
+	float4 cCubeTextureColor = gtxtCubeMap.Sample(gssWrap, vReflected);
+	//float4 cCubeTextureColor = gtxtSkyCubeTexture.Sample(gssWrap, vReflected);
+	
+	//	return(float4(vReflected * 0.5f + 0.5f, 1.0f));
+	return(cCubeTextureColor);
+	//	return(cIllumination * cCubeTextureColor);
+}
+
+struct VS_OUTLINE_INPUT
+{
+	float3 position : POSITION;
+	float3 normal : NORMAL;
+};
+
+struct VS_OUTLINE_OUTPUT
+{
+	float4 position : SV_POSITION;
+	float3 positionW : POSITION;
+	//	nointerpolation float3 normalW : NORMAL;
+#ifdef _WITH_VERTEX_LIGHTING
+	float4 color : COLOR;
+#else
+	float3 normalW : NORMAL;
+#endif
+};
+
+VS_OUTLINE_OUTPUT VSLighting(VS_OUTLINE_INPUT input)
+{
+	VS_OUTLINE_OUTPUT output;
+
+	output.positionW = (float3) mul(float4(input.position, 1.0f), gmtxGameObject);
+	float fScale = 1.40175f + length(gvCameraPosition - output.positionW) * 0.00035f;
+	// output.positionW = (float3) mul(float4(input.position*, 1.0f), gmtxGameObject);
+	output.position = mul(mul(float4(output.positionW, 1.0f), gmtxView), gmtxProjection);
+	float3 normalW = mul(input.normal, (float3x3) gmtxGameObject);
+#ifdef _WITH_VERTEX_LIGHTING
+	output.color = Lighting(output.positionW, normalize(normalW));
+#else
+	output.normalW = normalW;
+#endif
+
+	return (output);
+}
+
+float4 PSLighting(VS_OUTLINE_OUTPUT input) : SV_TARGET
+{
+#ifdef _WITH_VERTEX_LIGHTING
+	return(input.color);
+#else
+	float3 normalW = normalize(input.normalW);
+	float4 cColor = Lighting(input.positionW, normalW);
+	return (cColor);
+	//return (float4(1.0f, 0.2f, 0.2f, 1.0f));
+#endif
+}
+
+
+
+#define _WITH_SCALING
+//#define _WITH_NORMAL_DISPLACEMENT
+//#define _WITH_PROJECTION_SPACE
+
+#define FRAME_BUFFER_WIDTH		640
+#define FRAME_BUFFER_HEIGHT		480
+
+VS_OUTLINE_OUTPUT VSOutline(VS_OUTLINE_INPUT input)
+{
+	VS_OUTLINE_OUTPUT output;
+
+#ifdef _WITH_SCALING
+	//Scaling
+	output.positionW = (float3) mul(float4(input.position, 1.0f), gmtxGameObject);
+	float fScale = 1.00175f + length(gvCameraPosition - output.positionW) * 0.00035f;
+	output.positionW = (float3) mul(float4(input.position * fScale, 1.0f), gmtxGameObject);
+	output.position = mul(mul(float4(output.positionW, 1.0f), gmtxView), gmtxProjection);
+#endif
+
+#ifdef _WITH_NORMAL_DISPLACEMENT
+	//Normal Displacement
+	output.positionW = (float3)mul(float4(input.position, 1.0f), gmtxGameObject);
+	float3 normalW = normalize(mul(input.normal, (float3x3)gmtxGameObject));
+	float fScale = length(gvCameraPosition - output.positionW) * 0.01f;
+	output.positionW += normalW * fScale;
+
+	output.position = mul(mul(float4(output.positionW, 1.0f), gmtxView), gmtxProjection);
+#endif
+
+#ifdef _WITH_PROJECTION_SPACE
+	//Projection Space
+	output.position = mul(mul(mul(float4(input.position, 1.0f), gmtxGameObject), gmtxView), gmtxProjection);
+	float3 normal = mul(mul(input.normal, (float3x3)gmtxGameObject), (float3x3)mul(gmtxView, gmtxProjection));
+	float2 f2Offset = normalize(normal.xy) / float2(FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT) * output.position.w * 3.5f;
+	output.position.xy += f2Offset;
+	output.position.z += 0.0f;
+#endif
+
+	return (output);
+}
+
+float4 PSOutline(VS_OUTLINE_OUTPUT input) : SV_TARGET
+{
+	return (float4(1.0f, 0.2f, 0.2f, 1.0f));
+}
+
